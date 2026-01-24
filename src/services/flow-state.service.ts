@@ -185,7 +185,7 @@ export class FlowStateService {
     });
 
     // SYSTEM INSTRUCTION TEMPLATE (Editable)
-    systemInstructionTemplate = signal<string>(PROMPT_BASE);
+    systemInstructionTemplate = signal<string>(FALLBACK_PROMPT);
 
     // QUIZ STORAGE
     activeTests = new Map<string, InteractiveTest>();
