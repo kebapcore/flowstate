@@ -150,39 +150,51 @@ export class AppComponent {
   isResizing = false;
 
   constructor() {
+    // Initialize FlowCloud (once per session)
+    this.initFlowCloud();
+
     // Force Landing State on Init if no data
     if (this.flowService.planSteps().length === 0 && this.flowService.notes().length === 0) {
-        this.flowService.appMode.set('landing');
-        this.flowService.leftSidebarOpen.set(false);
-        this.flowService.rightPanelOpen.set(false);
+      this.flowService.appMode.set('landing');
+      this.flowService.leftSidebarOpen.set(false);
+      this.flowService.rightPanelOpen.set(false);
     } else {
-        // Restore project state if data exists
-        this.flowService.appMode.set('project'); // Default fallback
-        this.flowService.leftSidebarOpen.set(true);
-        this.flowService.rightPanelOpen.set(true);
+      // Restore project state if data exists
+      this.flowService.appMode.set('project'); // Default fallback
+      this.flowService.leftSidebarOpen.set(true);
+      this.flowService.rightPanelOpen.set(true);
+    }
+  }
+
+  private async initFlowCloud() {
+    const accessKey = (process.env as any)['SYSTEM_ACCESS_KEY'] || '';
+    if (accessKey) {
+      await this.flowService.initFlowCloud(accessKey);
+    } else {
+      console.warn('⚠️ SYSTEM_ACCESS_KEY not found, FlowCloud disabled');
     }
   }
 
   isMobile() { return window.innerWidth < 768; }
 
   startResizing(event: MouseEvent) {
-      this.isResizing = true;
-      event.preventDefault();
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
+    this.isResizing = true;
+    event.preventDefault();
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
   }
 
   onMouseMove(event: MouseEvent) {
-      if (!this.isResizing) return;
-      const newWidth = window.innerWidth - event.clientX - 12;
-      this.flowService.setRightPanelWidth(newWidth);
+    if (!this.isResizing) return;
+    const newWidth = window.innerWidth - event.clientX - 12;
+    this.flowService.setRightPanelWidth(newWidth);
   }
 
   onMouseUp() {
-      if (this.isResizing) {
-          this.isResizing = false;
-          document.body.style.cursor = '';
-          document.body.style.userSelect = '';
-      }
+    if (this.isResizing) {
+      this.isResizing = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
   }
 }
