@@ -917,7 +917,7 @@ export class FlowStateService {
     toggleDevPanel() { this.showDevPanel.update(v => !v); }
     toggleZenMode() { this.zenMode.update(v => !v); }
     toggleWidgetVisibility() { this.widgetVisible.update(v => !v); }
-    resetSystemInstruction() { this.systemInstructionTemplate.set(PROMPT_BASE); }
+    resetSystemInstruction() { this.systemInstructionTemplate.set(FALLBACK_PROMPT); }
 
     saveScript(n: string, c: string) { this.savedScripts.update(s => [...s.filter(x => x.name !== n), { name: n, content: c }]); }
     deleteScript(n: string) { this.savedScripts.update(s => s.filter(x => x.name !== n)); }
