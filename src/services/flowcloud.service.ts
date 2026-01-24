@@ -16,6 +16,7 @@ const INSTRUCTION_FILES = [
     'system_base.txt',
     'agent_creation.txt',
     'dj_mode.txt',
+    'flowscript.txt',
     'note_system.txt',
     'routine_management.txt',
     'test_extra.txt'
@@ -27,6 +28,7 @@ export interface FlowCloudInstructions {
     system_base: string;
     agent_creation: string;
     dj_mode: string;
+    flowscript: string;
     note_system: string;
     routine_management: string;
     test_extra: string;
@@ -47,6 +49,7 @@ export class FlowCloudService {
         system_base: '',
         agent_creation: '',
         dj_mode: '',
+        flowscript: '',
         note_system: '',
         routine_management: '',
         test_extra: ''
@@ -135,6 +138,7 @@ export class FlowCloudService {
                 system_base: sessionStorage.getItem(CACHE_PREFIX + 'system_base.txt') || '',
                 agent_creation: sessionStorage.getItem(CACHE_PREFIX + 'agent_creation.txt') || '',
                 dj_mode: sessionStorage.getItem(CACHE_PREFIX + 'dj_mode.txt') || '',
+                flowscript: sessionStorage.getItem(CACHE_PREFIX + 'flowscript.txt') || '',
                 note_system: sessionStorage.getItem(CACHE_PREFIX + 'note_system.txt') || '',
                 routine_management: sessionStorage.getItem(CACHE_PREFIX + 'routine_management.txt') || '',
                 test_extra: sessionStorage.getItem(CACHE_PREFIX + 'test_extra.txt') || ''
@@ -156,9 +160,10 @@ export class FlowCloudService {
                 system_base: results[0],
                 agent_creation: results[1],
                 dj_mode: results[2],
-                note_system: results[3],
-                routine_management: results[4],
-                test_extra: results[5]
+                flowscript: results[3],
+                note_system: results[4],
+                routine_management: results[5],
+                test_extra: results[6]
             };
 
             this.isLoaded.set(true);
@@ -191,6 +196,7 @@ export class FlowCloudService {
             i.system_base,
             i.agent_creation,
             i.dj_mode,
+            i.flowscript,
             i.note_system,
             i.routine_management,
             i.test_extra
