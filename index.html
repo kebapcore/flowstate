@@ -89,7 +89,14 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
+  <script>
+    // Polyfill process.env for browser environment
+    window.process = {
+      env: {
+        API_KEY: '' // Will be populated from localStorage or fallback
+      }
+    };
+  </script>
 </head>
   <body>
     <app-root></app-root>

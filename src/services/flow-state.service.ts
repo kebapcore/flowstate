@@ -421,7 +421,7 @@ export class FlowStateService {
   private initializeConfig() {
       // 1. Load API Key (LocalStorage > Env)
       const storedKey = localStorage.getItem('flow_api_key');
-      const envKey = process.env['API_KEY'] || '';
+      const envKey = (typeof process !== 'undefined' && process.env) ? process.env['API_KEY'] || '' : '';
       
       // Simple priority: Stored > Env
       if (storedKey && storedKey.trim().length > 0) {
