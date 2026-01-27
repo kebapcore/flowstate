@@ -31,6 +31,28 @@ import { FlowStateService } from '../services/flow-state.service';
         </div>
 
         <div class="flex-1 overflow-y-auto custom-scrollbar">
+            <!-- GIT AUTO-COMMIT INFO -->
+            <div class="p-6 border-b border-[#444746] bg-[#1d1c21]">
+                <h3 class="text-[#E3E3E3] text-sm font-bold uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm text-[#D0BCFF]">sync_alt</span> Auto-Commit System
+                </h3>
+                <div class="bg-[#131314] rounded-lg p-4 border border-[#444746] flex flex-col gap-3">
+                    <p class="text-xs text-[#C4C7C5] leading-relaxed">
+                        To enable real-time backup of AI modifications to GitHub, run the watcher script in your terminal:
+                    </p>
+                    <div class="bg-[#000] rounded px-3 py-2 border border-white/5 flex items-center justify-between">
+                        <code class="font-mono text-xs text-[#9cdcfe]">node tools/auto-commit.js</code>
+                        <button class="text-[#8E918F] hover:text-white" title="Copy" (click)="copyCmd()">
+                            <span class="material-symbols-outlined text-sm">content_copy</span>
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2 text-[10px] text-[#5E5E5E]">
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        <span>Watches /src for changes & pushes to origin</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- API Configuration -->
             <div class="p-6 border-b border-[#444746] bg-[#18181b]">
                 <h3 class="text-[#E3E3E3] text-sm font-bold uppercase tracking-wide mb-4 flex items-center gap-2">
@@ -146,5 +168,10 @@ export class DevPanelComponent {
       
       this.flowService.addSystemMessage("🛠️ Dev Engine: Configuration Updated");
       this.close();
+  }
+
+  copyCmd() {
+      navigator.clipboard.writeText('node tools/auto-commit.js');
+      this.flowService.addSystemMessage('📋 Command copied to clipboard');
   }
 }

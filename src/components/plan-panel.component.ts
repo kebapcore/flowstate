@@ -322,27 +322,65 @@ import { MediaPlayerComponent } from './media-player.component';
           </div>
         }
         
-        <!-- FILES VIEW -->
+        <!-- FILES VIEW (REFACTORED) -->
         @if (activeTab() === 'files' && flowService.activeModules().files) {
-             <div class="min-h-[100px] border border-dashed border-[#27272a] rounded-2xl p-6 flex flex-col items-center justify-center text-[#5E5E5E] transition-all hover:border-[#D0BCFF] hover:bg-[#18181b] mb-6 group cursor-pointer" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
-                @if (flowService.files().length === 0) { <span class="material-symbols-outlined text-3xl mb-2 group-hover:text-[#D0BCFF] transition-colors">cloud_upload</span><p class="text-xs text-center">Drag files here</p> } @else { <div class="flex flex-col items-center"><span class="material-symbols-outlined text-2xl mb-2 text-[#D0BCFF]">add_circle</span><p class="text-xs">Add another file</p></div> }
+             <!-- Drop Zone -->
+             <div class="min-h-[80px] border border-dashed border-[#27272a] rounded-2xl p-4 flex flex-col items-center justify-center text-[#5E5E5E] transition-all hover:border-[#D0BCFF] hover:bg-[#18181b] mb-6 group cursor-pointer" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
+                @if (flowService.files().length === 0) { 
+                    <span class="material-symbols-outlined text-2xl mb-1 group-hover:text-[#D0BCFF] transition-colors">cloud_upload</span>
+                    <p class="text-[10px] text-center">Drag files here</p> 
+                } @else { 
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-xl text-[#D0BCFF]">add_circle</span>
+                        <p class="text-[10px]">Add file</p>
+                    </div> 
+                }
             </div>
-             <div class="space-y-3">
-                 @for (file of flowService.files(); track file.id) {
-                     <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-[#18181b] border border-transparent hover:border-white/5 group transition-colors">
-                         <div class="w-10 h-10 rounded-lg bg-[#27272a] flex items-center justify-center">
-                             <span class="material-symbols-outlined text-[#8E918F] text-xl">{{ getIcon(file) }}</span>
+
+             <!-- 1. IMAGE GALLERY (Google Images Style) -->
+             @if (imageFiles().length > 0) {
+                 <div class="mb-2 px-1 text-[10px] font-bold text-[#5E5E5E] uppercase tracking-wider">Images</div>
+                 <div class="grid grid-cols-2 md:grid-cols-3 gap-1 mb-6">
+                     @for (img of imageFiles(); track img.id) {
+                         <div class="relative aspect-square bg-[#18181b] overflow-hidden group cursor-pointer rounded-lg border border-white/5 hover:border-[#D0BCFF] transition-all" (click)="openPreview(img)">
+                             <!-- Image Render -->
+                             <img [src]="img.url" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy">
+                             
+                             <!-- Hover Overlay -->
+                             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end justify-between p-2 opacity-0 group-hover:opacity-100">
+                                 <span class="text-[9px] text-white truncate max-w-[70%] drop-shadow-md">{{img.name}}</span>
+                                 <button (click)="$event.stopPropagation(); deleteFile(img.id)" class="w-5 h-5 rounded bg-black/50 text-white flex items-center justify-center hover:bg-red-500 transition-colors">
+                                     <span class="material-symbols-outlined text-[12px]">close</span>
+                                 </button>
+                             </div>
                          </div>
-                         <span class="text-sm text-[#C4C7C5] truncate flex-1 font-medium">{{ file.name }}</span>
-                         <button (click)="deleteFile(file.id)" class="opacity-0 group-hover:opacity-100 text-[#5E5E5E] hover:text-red-400 p-2"><span class="material-symbols-outlined text-lg">close</span></button>
-                     </div>
-                 }
-             </div>
+                     }
+                 </div>
+             }
+
+             <!-- 2. OTHER FILES LIST -->
+             @if (otherFiles().length > 0) {
+                 <div class="mb-2 px-1 text-[10px] font-bold text-[#5E5E5E] uppercase tracking-wider">Documents</div>
+                 <div class="space-y-2">
+                     @for (file of otherFiles(); track file.id) {
+                         <div (click)="openPreview(file)" class="flex items-center gap-3 p-3 rounded-xl bg-[#18181b] border border-transparent hover:border-[#444746] cursor-pointer group transition-all">
+                             <div class="w-9 h-9 rounded-lg bg-[#27272a] flex items-center justify-center text-[#D0BCFF]">
+                                 <span class="material-symbols-outlined text-lg">{{ getIcon(file) }}</span>
+                             </div>
+                             <div class="flex-1 min-w-0">
+                                 <div class="text-xs text-[#E3E3E3] truncate font-medium">{{ file.name }}</div>
+                                 <div class="text-[10px] text-[#5E5E5E]">{{ getFileTypeLabel(file) }}</div>
+                             </div>
+                             <button (click)="$event.stopPropagation(); deleteFile(file.id)" class="opacity-0 group-hover:opacity-100 text-[#5E5E5E] hover:text-red-400 p-2 transition-opacity"><span class="material-symbols-outlined text-lg">close</span></button>
+                         </div>
+                     }
+                 </div>
+             }
         }
       </div>
       } 
 
-      <!-- (Editor and Preview Logic kept identical but visually refined) -->
+      <!-- (Editor Logic for Notes/Plan) -->
       @if (showEditor()) {
         <div class="absolute inset-0 z-50 bg-[#121212] flex flex-col p-8 animate-in fade-in zoom-in-95 duration-200">
            <div class="flex items-center justify-between mb-8">
@@ -357,6 +395,43 @@ import { MediaPlayerComponent } from './media-player.component';
               <button (click)="save()" [disabled]="!editTitle() || (editorMode() === 'note' && !editContent())" class="bg-[#D0BCFF] hover:bg-[#EADDFF] disabled:opacity-50 disabled:cursor-not-allowed text-[#381E72] px-8 py-3 rounded-full text-sm font-bold transition-all shadow-lg active:scale-95">Save</button>
            </div>
         </div>
+      }
+
+      <!-- FILE PREVIEW OVERLAY -->
+      @if (previewFile()) {
+          <div class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex flex-col animate-in fade-in duration-200" (click)="closePreview()">
+              
+              <!-- Toolbar -->
+              <div class="flex items-center justify-between p-4 md:p-6" (click)="$event.stopPropagation()">
+                  <div class="text-white text-sm font-medium truncate max-w-[200px]">{{ previewFile()?.name }}</div>
+                  <div class="flex gap-2">
+                      <a [href]="previewFile()?.url" [download]="previewFile()?.name" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
+                          <span class="material-symbols-outlined text-lg">download</span>
+                      </a>
+                      <button (click)="closePreview()" class="w-9 h-9 rounded-full bg-white/10 hover:bg-red-500/50 flex items-center justify-center text-white transition-colors">
+                          <span class="material-symbols-outlined text-lg">close</span>
+                      </button>
+                  </div>
+              </div>
+
+              <!-- Content -->
+              <div class="flex-1 flex items-center justify-center p-4 overflow-hidden" (click)="$event.stopPropagation()">
+                  @if (isImage(previewFile()!)) {
+                      <img [src]="previewFile()?.url" class="max-w-full max-h-full object-contain shadow-2xl rounded-lg">
+                  } @else if (previewLoading()) {
+                      <div class="animate-spin text-[#D0BCFF]"><span class="material-symbols-outlined text-3xl">progress_activity</span></div>
+                  } @else if (previewTextContent()) {
+                      <div class="bg-[#1e1e1e] p-6 rounded-xl border border-white/10 max-w-3xl w-full max-h-full overflow-y-auto custom-scrollbar">
+                          <div class="prose prose-invert prose-sm max-w-none font-mono" [innerHTML]="previewTextContent()"></div>
+                      </div>
+                  } @else {
+                      <div class="text-[#8E918F] flex flex-col items-center gap-2">
+                          <span class="material-symbols-outlined text-4xl">visibility_off</span>
+                          <span>Preview not available</span>
+                      </div>
+                  }
+              </div>
+          </div>
       }
     </div>
   `

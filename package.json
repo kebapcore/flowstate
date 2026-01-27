@@ -1,5 +1,5 @@
 {
-  "name": "copy-of-flowstate-backup",
+  "name": "flowstate-backup-2.5",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -18,6 +18,7 @@
     "@angular/core": "^21.1.0",
     "marked": "12.0.0",
     "html-to-image": "1.11.11",
+    "@supabase/supabase-js": "^2.93.1",
     "@angular/build": "^21.1.0",
     "@angular/cli": "^21.1.0",
     "@angular/compiler-cli": "^21.1.0",
@@ -25,7 +26,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
-    "typescript": "~5.9.0",
+    "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
 }

@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, effect, inject, signal } from '@angular/core';
+import { Component, ElementRef, ViewChild, effect, inject, signal, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FlowStateService, UserFile } from '../services/flow-state.service';
@@ -33,6 +33,48 @@ import { toPng } from 'html-to-image';
         ></div>
       }
 
+      <!-- LIVE AUDIO OVERLAY -->
+      @if (flowService.isLiveMode()) {
+          <div class="absolute inset-0 z-50 bg-[#000000]/95 backdrop-blur-xl flex flex-col items-center justify-center animate-in fade-in duration-500">
+              
+              <!-- Header Info -->
+              <div class="absolute top-8 flex flex-col items-center space-y-2">
+                  <div class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold uppercase tracking-wider animate-pulse">
+                      <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                      Live Audio
+                  </div>
+                  <div class="text-[#8E918F] font-mono text-sm tracking-widest">{{ formatDuration(flowService.liveDuration()) }}</div>
+              </div>
+
+              <!-- VISUALIZER -->
+              <div class="w-full h-64 flex items-center justify-center relative my-10">
+                  <canvas #visualizerCanvas class="w-full h-full max-w-2xl"></canvas>
+                  <!-- Center Avatar Pulsing -->
+                  <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div class="w-32 h-32 rounded-full bg-[#D0BCFF]/5 blur-3xl animate-pulse"></div>
+                  </div>
+              </div>
+
+              <!-- LIVE SUBTITLES -->
+              <div class="w-full max-w-3xl px-8 text-center h-24 flex items-center justify-center overflow-hidden">
+                  <p class="text-xl md:text-2xl font-light text-[#E3E3E3] leading-relaxed transition-all duration-300">
+                      {{ getLastMessageText() }}
+                  </p>
+              </div>
+
+              <!-- CONTROLS -->
+              <div class="absolute bottom-12 flex items-center gap-6">
+                  <button (click)="flowService.disconnectLive()" class="w-16 h-16 rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center shadow-2xl transition-transform hover:scale-110 active:scale-95">
+                      <span class="material-symbols-outlined text-3xl">call_end</span>
+                  </button>
+                  <!-- Minimalizer to let user type -->
+                  <button (click)="flowService.isLiveMode.set(false)" class="w-12 h-12 rounded-full bg-[#2B2930] hover:bg-[#444746] text-[#C4C7C5] flex items-center justify-center transition-colors" title="Minimize">
+                      <span class="material-symbols-outlined text-xl">keyboard_arrow_down</span>
+                  </button>
+              </div>
+          </div>
+      }
+
       <!-- DRAG OVERLAY -->
       @if (isDragging()) {
          <div class="absolute inset-0 z-50 bg-[#000000]/80 backdrop-blur-sm flex items-center justify-center flex-col text-[#D0BCFF] animate-in fade-in duration-200 pointer-events-none border-2 border-dashed border-[#D0BCFF]/50 m-6 rounded-[24px]">
@@ -59,6 +101,17 @@ import { toPng } from 'html-to-image';
         } @else {
 
           <div class="max-w-3xl mx-auto w-full flex flex-col px-4 md:px-8">
+            
+            <!-- API KEY WARNING -->
+            @if (!flowService.apiKey() && flowService.messages().length === 0) {
+               <div class="mb-8 p-4 bg-[#1E1F20] rounded-2xl border border-[#444746] flex flex-col items-center text-center animate-in slide-in-from-bottom-4">
+                   <span class="material-symbols-outlined text-[#D0BCFF] text-3xl mb-2">key</span>
+                   <h3 class="text-[#E3E3E3] font-bold mb-1">API Key Required</h3>
+                   <p class="text-[#C4C7C5] text-sm mb-4">You need your own Gemini API Key to use this local-only version.</p>
+                   <button (click)="flowService.openSettings()" class="px-4 py-2 bg-[#D0BCFF] text-[#381E72] rounded-lg font-bold text-sm hover:bg-[#EADDFF]">Open Settings</button>
+               </div>
+            }
+
             @for (msg of flowService.messages(); track $index) {
                 @if (!msg.hidden) {
                 
@@ -121,8 +174,58 @@ import { toPng } from 'html-to-image';
       </div>
 
       <!-- Floating Input Area -->
-      <div class="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-20">
+      <div class="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-20" *ngIf="!flowService.isLiveMode()">
         
+        <!-- URL CONTEXT POPOVER -->
+        @if (showUrlPanel()) {
+           <div class="absolute bottom-[calc(100%+12px)] left-0 w-full bg-[#1e1e1e] rounded-2xl shadow-2xl border border-[#444746] p-4 animate-in slide-in-from-bottom-2 zoom-in-95">
+               <div class="flex items-center justify-between mb-3 border-b border-[#333] pb-2">
+                   <div class="flex items-center gap-2">
+                       <span class="material-symbols-outlined text-[#D0BCFF]">link</span>
+                       <span class="text-sm font-bold text-[#E3E3E3]">URL Context</span>
+                       <span class="text-[10px] bg-[#2B2930] px-1.5 py-0.5 rounded text-[#8E918F]">{{urlList().length}}/20</span>
+                   </div>
+                   <button (click)="toggleUrlPanel(false)" class="text-[#8E918F] hover:text-white"><span class="material-symbols-outlined text-lg">close</span></button>
+               </div>
+               
+               <div class="space-y-2 mb-3 max-h-[150px] overflow-y-auto custom-scrollbar">
+                   @for (url of urlList(); track $index) {
+                       <div class="flex items-center gap-2 bg-[#131314] px-2 py-1.5 rounded-lg group">
+                           <span class="text-xs text-[#C4C7C5] truncate flex-1 font-mono">{{url}}</span>
+                           <button (click)="removeUrl($index)" class="text-[#5E5E5E] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                               <span class="material-symbols-outlined text-sm">remove_circle</span>
+                           </button>
+                       </div>
+                   }
+                   @if (urlList().length === 0) {
+                       <div class="text-xs text-[#5E5E5E] italic py-2 text-center">No URLs added.</div>
+                   }
+               </div>
+
+               <div class="flex items-center gap-2">
+                   <input 
+                     [(ngModel)]="urlInput" 
+                     (keydown.enter)="addUrl()"
+                     placeholder="https://..." 
+                     class="flex-1 bg-[#131314] border border-[#333] rounded-lg px-3 py-2 text-xs text-[#E3E3E3] focus:outline-none focus:border-[#D0BCFF]"
+                   >
+                   <button 
+                     (click)="addUrl()"
+                     [disabled]="urlList().length >= 20 || !urlInput"
+                     class="w-8 h-8 rounded-lg bg-[#2B2930] hover:bg-[#D0BCFF] hover:text-[#381E72] flex items-center justify-center transition-colors disabled:opacity-50"
+                   >
+                       <span class="material-symbols-outlined text-lg">add</span>
+                   </button>
+               </div>
+
+               <div class="mt-3 pt-2 border-t border-[#333] flex justify-end">
+                   <button (click)="toggleUrlPanel(false)" class="text-xs font-bold text-[#D0BCFF] hover:text-[#EADDFF] flex items-center gap-1">
+                       <span class="material-symbols-outlined text-sm">check</span> Done
+                   </button>
+               </div>
+           </div>
+        }
+
         <div 
           class="relative w-full shadow-2xl shadow-black/50 min-h-[64px] transition-all duration-300 bg-[#18181b] border border-white/10 rounded-[28px] overflow-hidden backdrop-blur-md"
         >
@@ -158,6 +261,37 @@ import { toPng } from 'html-to-image';
              </button>
              <input #fileInput type="file" multiple class="hidden" (change)="handleFileSelect($event)">
 
+             <!-- LIVE AUDIO BUTTON (CONDITIONAL) -->
+             @if (flowService.activeModules().liveCall) {
+                 <button 
+                    (click)="toggleLiveMode()"
+                    class="w-9 h-9 mb-1 flex items-center justify-center hover:bg-white/5 rounded-full transition-colors active:scale-95 flex-shrink-0 relative group"
+                    [class.text-red-400]="flowService.isLiveConnecting()"
+                    [class.text-[#8E918F]]="!flowService.isLiveConnecting()"
+                    title="Start Live Audio"
+                 >
+                    @if (flowService.isLiveConnecting()) {
+                        <span class="material-symbols-outlined text-[20px] animate-spin">sync</span>
+                    } @else {
+                        <span class="material-symbols-outlined text-[20px] group-hover:text-[#D0BCFF]">mic</span>
+                    }
+                 </button>
+             }
+
+             <!-- URL BUTTON (Context) -->
+             <button 
+                (click)="toggleUrlPanel(!showUrlPanel())"
+                class="w-9 h-9 mb-1 flex items-center justify-center hover:bg-white/5 rounded-full transition-colors active:scale-95 flex-shrink-0 relative"
+                [class.text-[#D0BCFF]]="urlList().length > 0"
+                [class.text-[#8E918F]]="urlList().length === 0"
+                title="Add URL Context"
+             >
+                <span class="material-symbols-outlined text-[20px]">link</span>
+                @if (urlList().length > 0) {
+                    <div class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#D0BCFF] rounded-full border border-[#18181b]"></div>
+                }
+             </button>
+
              <div class="flex-1 flex flex-wrap items-center bg-transparent py-2 min-h-[44px]">
                 <textarea 
                    [(ngModel)]="userInput" 
@@ -172,7 +306,7 @@ import { toPng } from 'html-to-image';
              </div>
              <button 
                 (click)="sendMessage()"
-                [disabled]="(!userInput.trim() && pendingFiles().length === 0) || flowService.isLoading() || !flowService.isSystemReady()"
+                [disabled]="(!userInput.trim() && pendingFiles().length === 0 && urlList().length === 0) || flowService.isLoading() || !flowService.isSystemReady()"
                 class="w-10 h-10 mb-0.5 flex items-center justify-center bg-[#D0BCFF] hover:bg-[#EADDFF] text-[#381E72] rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 flex-shrink-0 shadow-lg"
              >
                 <span class="material-symbols-outlined text-[18px]">arrow_upward</span>
@@ -183,7 +317,7 @@ import { toPng } from 'html-to-image';
     </div>
   `
 })
-export class ChatComponent {
+export class ChatComponent implements OnDestroy {
   flowService = inject(FlowStateService);
   
   userInput = '';
@@ -192,18 +326,115 @@ export class ChatComponent {
   pendingFiles = signal<UserFile[]>([]);
   isDragging = signal(false);
 
+  // URL Context
+  urlList = signal<string[]>([]);
+  showUrlPanel = signal(false);
+  urlInput = '';
+
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('visualizerCanvas') visualizerCanvas!: ElementRef<HTMLCanvasElement>;
+
+  private animationFrameId: any;
 
   constructor() {
-    effect(() => { this.flowService.messages(); setTimeout(() => this.scrollToBottom(), 100); });
+    effect(() => { 
+        this.flowService.messages(); 
+        if (!this.flowService.isLiveMode()) {
+            setTimeout(() => this.scrollToBottom(), 100); 
+        }
+    });
+
+    effect(() => {
+        if (this.flowService.isLiveMode()) {
+            setTimeout(() => this.startVisualizer(), 100);
+        } else {
+            this.stopVisualizer();
+        }
+    });
+  }
+
+  // --- LIVE AUDIO ---
+  toggleLiveMode() {
+      if (this.flowService.isLiveMode()) {
+          this.flowService.isLiveMode.set(false); // Just minimize
+      } else {
+          this.flowService.connectLive();
+      }
+  }
+
+  formatDuration(seconds: number): string {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+
+  getLastMessageText(): string {
+      const msgs = this.flowService.messages();
+      if (msgs.length === 0) return "Listening...";
+      const last = msgs[msgs.length - 1];
+      return last.text.slice(-150); // Show last 150 chars for subtitle effect
+  }
+
+  startVisualizer() {
+      if (!this.visualizerCanvas) return;
+      const canvas = this.visualizerCanvas.nativeElement;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const analyser = this.flowService.audioAnalyser;
+      if (!analyser) return;
+
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      const draw = () => {
+          if (!this.flowService.isLiveMode()) return;
+          this.animationFrameId = requestAnimationFrame(draw);
+
+          analyser.getByteFrequencyData(dataArray);
+
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          const barWidth = (canvas.width / bufferLength) * 2.5;
+          let barHeight;
+          let x = 0;
+
+          // Mirror effect from center
+          const centerX = canvas.width / 2;
+
+          for(let i = 0; i < bufferLength; i++) {
+              barHeight = dataArray[i] / 2;
+              
+              // Dynamic color based on amplitude
+              const r = barHeight + (25 * (i/bufferLength));
+              const g = 250 * (i/bufferLength);
+              const b = 50;
+
+              ctx.fillStyle = `rgba(208, 188, 255, ${barHeight / 200})`; // #D0BCFF base with opacity
+
+              // Draw symmetrical bars
+              ctx.fillRect(centerX + x, canvas.height/2 - barHeight/2, barWidth, barHeight);
+              ctx.fillRect(centerX - x, canvas.height/2 - barHeight/2, barWidth, barHeight);
+
+              x += barWidth + 1;
+          }
+      };
+
+      draw();
+  }
+
+  stopVisualizer() {
+      if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
   }
 
   // --- INTERACTION HANDLER ---
   handleClick(event: MouseEvent) {
       const target = event.target as HTMLElement;
       
-      // 1. START QUIZ BUTTON (Triggers Right Panel Mode)
       const testBtn = target.closest('.test-run-btn') as HTMLElement;
       if (testBtn) {
           const testId = testBtn.dataset['testid'];
@@ -213,7 +444,6 @@ export class ChatComponent {
           return;
       }
 
-      // 2. AGENT CARD
       const agentBtn = target.closest('.agent-run-btn') as HTMLElement;
       if (agentBtn) {
           const configStr = agentBtn.getAttribute('data-config');
@@ -228,7 +458,6 @@ export class ChatComponent {
           return;
       }
       
-      // 3. DESIGN DOWNLOAD BUTTON
       const designBtn = target.closest('.design-export-btn') as HTMLElement;
       if (designBtn) {
           const designId = designBtn.dataset['designId'];
@@ -238,7 +467,6 @@ export class ChatComponent {
           return;
       }
 
-      // 4. BACKGROUND SELECTOR
       const bgBtn = target.closest('.background-selector-btn') as HTMLElement;
       if (bgBtn) {
           const url = bgBtn.dataset['url'];
@@ -249,7 +477,12 @@ export class ChatComponent {
           return;
       }
 
-      // 5. CODE EXECUTION WIDGET TOGGLE
+      const urlReqBtn = target.closest('.url-request-btn') as HTMLElement;
+      if (urlReqBtn) {
+          this.showUrlPanel.set(true);
+          return;
+      }
+
       const codeToggle = target.closest('.code-widget-toggle') as HTMLElement;
       if (codeToggle) {
           const container = codeToggle.closest('.code-widget-container');
@@ -258,7 +491,6 @@ export class ChatComponent {
               const chevron = container.querySelector('.chevron');
               if (content) {
                   content.classList.toggle('hidden');
-                  // Rotate Chevron
                   if (chevron) {
                       if (content.classList.contains('hidden')) {
                           chevron.classList.remove('rotate-180');
@@ -271,6 +503,26 @@ export class ChatComponent {
       }
   }
 
+  // --- URL HANDLING ---
+  addUrl() {
+      if (this.urlInput && this.urlList().length < 20) {
+          let url = this.urlInput.trim();
+          if (!url.match(/^https?:\/\//)) {
+              url = 'https://' + url;
+          }
+          this.urlList.update(list => [...list, url]);
+          this.urlInput = '';
+      }
+  }
+
+  removeUrl(index: number) {
+      this.urlList.update(list => list.filter((_, i) => i !== index));
+  }
+
+  toggleUrlPanel(show: boolean) {
+      this.showUrlPanel.set(show);
+  }
+
   async downloadDesign(designId: string, button: HTMLElement) {
       const containerId = `design-container-${designId}`;
       const container = document.getElementById(containerId);
@@ -280,7 +532,6 @@ export class ChatComponent {
           return;
       }
 
-      // Find the specific preview element to capture, ignoring the toolbar/buttons
       const previewElement = container.querySelector('.design-preview') as HTMLElement;
       
       if (!previewElement) {
@@ -293,14 +544,12 @@ export class ChatComponent {
       button.style.pointerEvents = 'none';
 
       try {
-          // Use html-to-image to generate blob
           const dataUrl = await toPng(previewElement, { 
               cacheBust: true,
-              skipFonts: true, // Speeds up generation
-              backgroundColor: null // Transparent background support
+              skipFonts: true, 
+              backgroundColor: null 
           });
 
-          // 1. Download to PC
           const link = document.createElement('a');
           const dateStr = new Date().toISOString().split('T')[0];
           const filename = `Design_${dateStr}_${designId.substring(0,6)}.png`;
@@ -308,8 +557,6 @@ export class ChatComponent {
           link.href = dataUrl;
           link.click();
 
-          // 2. Add to Files Tab
-          // Convert Data URL to base64 string (strip header)
           const base64 = dataUrl.split(',')[1];
           
           const userFile: UserFile = {
@@ -322,8 +569,6 @@ export class ChatComponent {
           };
           
           this.flowService.addFile(userFile);
-          
-          // Ensure Files module is active so user sees it eventually
           this.flowService.updateModule('files', true);
 
           button.innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span> Saved';
@@ -350,15 +595,29 @@ export class ChatComponent {
   }
 
   async sendMessage() {
-    if ((!this.userInput.trim() && this.pendingFiles().length === 0) || this.flowService.isLoading()) return;
+    if ((!this.userInput.trim() && this.pendingFiles().length === 0 && this.urlList().length === 0) || this.flowService.isLoading()) return;
     
+    // Check key before sending
+    if (!this.flowService.apiKey()) {
+        this.flowService.openSettings();
+        return;
+    }
+
     const text = this.userInput;
     const files = [...this.pendingFiles()];
+    let hiddenContext = '';
+    
+    if (this.urlList().length > 0) {
+        const urlString = this.urlList().map(u => `- ${u}`).join('\n');
+        hiddenContext = `[LOG: These URL's given:]\n${urlString}`;
+        this.urlList.set([]); 
+        this.showUrlPanel.set(false);
+    }
     
     this.userInput = '';
-    this.pendingFiles.set([]); // Clear pending immediately
+    this.pendingFiles.set([]); 
     
-    this.flowService.sendMessage(text, files);
+    this.flowService.sendMessage(text, files, hiddenContext);
   }
 
   scrollToBottom() {
@@ -376,7 +635,7 @@ export class ChatComponent {
       if (input.files && input.files.length > 0) {
           this.processFiles(Array.from(input.files));
       }
-      input.value = ''; // Reset
+      input.value = ''; 
   }
 
   onDragOver(e: DragEvent) {
@@ -388,7 +647,6 @@ export class ChatComponent {
   onDragLeave(e: DragEvent) {
       e.preventDefault();
       e.stopPropagation();
-      // Only disable if leaving the window or main container
       if ((e.relatedTarget as HTMLElement) === null) {
         this.isDragging.set(false);
       }
@@ -412,7 +670,7 @@ export class ChatComponent {
                   id: Math.random().toString(36),
                   name: file.name,
                   type: file.type || 'application/octet-stream',
-                  url: URL.createObjectURL(file), // For preview
+                  url: URL.createObjectURL(file), 
                   base64: base64
               };
               this.pendingFiles.update(current => [...current, userFile]);
@@ -432,7 +690,6 @@ export class ChatComponent {
           reader.readAsDataURL(file);
           reader.onload = () => {
               const result = reader.result as string;
-              // Remove data:mime/type;base64, prefix
               const base64 = result.split(',')[1];
               resolve(base64);
           };
@@ -447,5 +704,9 @@ export class ChatComponent {
       if (type.startsWith('audio/')) return 'headphones';
       if (type === 'application/pdf') return 'picture_as_pdf';
       return 'draft';
+  }
+
+  ngOnDestroy() {
+      this.stopVisualizer();
   }
 }

@@ -2,6 +2,7 @@ import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FlowStateService, ThemeType, ModuleState } from '../services/flow-state.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-settings-modal',
@@ -61,6 +62,45 @@ import { FlowStateService, ThemeType, ModuleState } from '../services/flow-state
           <!-- PERSONA TAB -->
           @if (activeTab() === 'persona') {
             <div class="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                
+                <!-- Cloud Sync Status -->
+                <div class="p-4 bg-[#131314] rounded-xl border border-[#444746] flex items-center justify-between">
+                    @if (authService.user()) {
+                        <div class="flex items-center gap-3">
+                            <img [src]="authService.profile()?.avatar_url" class="w-8 h-8 rounded-full border border-white/10">
+                            <div>
+                                <div class="text-xs font-bold text-[#E3E3E3]">{{ authService.profile()?.full_name }}</div>
+                                <div class="text-[10px] text-green-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> Cloud Sync Active</div>
+                            </div>
+                        </div>
+                        <button (click)="authService.signOut()" class="text-xs text-[#8E918F] hover:text-white underline">Sign Out</button>
+                    } @else {
+                        <div>
+                            <div class="text-xs font-bold text-[#E3E3E3] mb-1">Cloud Sync Disabled</div>
+                            <div class="text-[10px] text-[#8E918F]">Login to save notes & routines to the cloud.</div>
+                        </div>
+                        <button (click)="authService.signInWithGoogle()" class="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-gray-200">Login with Google</button>
+                    }
+                </div>
+
+                <div class="h-px bg-[#444746]/50 my-2"></div>
+                
+                <!-- API KEY INPUT (CRITICAL FOR LOCAL USE) -->
+                <div>
+                    <div class="text-xs font-bold text-[#C4C7C5] uppercase tracking-wider mb-2">Gemini API Key</div>
+                    <div class="relative">
+                        <input 
+                            type="password"
+                            [(ngModel)]="tempKey"
+                            placeholder="sk-..."
+                            class="w-full bg-[#131314] border border-[#444746] rounded-xl px-4 py-3 text-sm text-[#E3E3E3] focus:outline-none focus:border-[#D0BCFF] focus:ring-1 focus:ring-[#D0BCFF] transition-all font-mono"
+                        >
+                        <p class="text-[10px] text-[#5E5E5E] mt-1">Saved locally on your device. Never synced.</p>
+                    </div>
+                </div>
+
+                <div class="h-px bg-[#444746]/50 my-2"></div>
+
                 <p class="text-xs text-[#C4C7C5]">Shape your thinking partner.</p>
 
                 <!-- NEW MODEL SELECTOR -->
@@ -159,7 +199,7 @@ import { FlowStateService, ThemeType, ModuleState } from '../services/flow-state
             </div>
           }
 
-          <!-- MODULES TAB (New) -->
+          <!-- MODULES TAB -->
           @if (activeTab() === 'modules') {
              <div class="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                 <p class="text-xs text-[#C4C7C5]">Toggle features to customize your experience and save AI tokens.</p>
@@ -201,6 +241,20 @@ import { FlowStateService, ThemeType, ModuleState } from '../services/flow-state
                            <span class="material-symbols-outlined text-[32px]">{{ flowService.activeModules().routine ? 'toggle_on' : 'toggle_off' }}</span>
                        </button>
                    </div>
+
+                   <!-- LIVE CALL (Canary) -->
+                   <div class="flex items-center justify-between p-4 bg-[#2B2930] rounded-2xl border border-[#444746]">
+                       <div>
+                          <div class="flex items-center gap-2 mb-1">
+                             <span class="text-sm font-medium text-[#E3E3E3]">Live Call</span>
+                             <span class="px-1.5 py-0.5 rounded bg-yellow-900/40 text-yellow-200 text-[9px] font-bold tracking-wider uppercase">Canary</span>
+                          </div>
+                          <div class="text-[10px] text-[#C4C7C5]">Voice interaction with Gemini Live.</div>
+                       </div>
+                       <button (click)="toggleModule('liveCall', !flowService.activeModules().liveCall)" class="text-[#D0BCFF] hover:text-[#EADDFF] transition-colors">
+                           <span class="material-symbols-outlined text-[32px]">{{ flowService.activeModules().liveCall ? 'toggle_on' : 'toggle_off' }}</span>
+                       </button>
+                   </div>
                 </div>
              </div>
           }
@@ -221,13 +275,15 @@ import { FlowStateService, ThemeType, ModuleState } from '../services/flow-state
 })
 export class SettingsModalComponent {
   flowService = inject(FlowStateService);
+  authService = inject(AuthService);
   activeTab = signal<'persona' | 'appearance' | 'modules'>('persona');
   
   // Temp State
   tempPersona = '';
   tempTheme: ThemeType = 'material';
   tempWallpaper = '';
-  tempModel = 'gemini-2.5-pro';
+  tempModel = '';
+  tempKey = '';
 
   constructor() {
     effect(() => {
@@ -236,7 +292,8 @@ export class SettingsModalComponent {
             this.tempPersona = this.flowService.userPersona();
             this.tempTheme = this.flowService.theme();
             this.tempWallpaper = this.flowService.wallpaper() || '';
-            this.tempModel = this.flowService.selectedModel(); 
+            this.tempModel = this.flowService.selectedModel();
+            this.tempKey = this.flowService.apiKey();
             this.activeTab.set('persona');
         }
     });
@@ -251,6 +308,12 @@ export class SettingsModalComponent {
     this.flowService.setTheme(this.tempTheme);
     this.flowService.setWallpaper(this.tempWallpaper.trim() || null);
     this.flowService.setModel(this.tempModel);
+    
+    // Save Key
+    if (this.tempKey !== this.flowService.apiKey()) {
+        this.flowService.updateApiKey(this.tempKey);
+    }
+
     this.close();
   }
 
