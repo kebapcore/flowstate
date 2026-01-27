@@ -62,6 +62,27 @@ import { FlowStateService, ThemeType, ModuleState } from '../services/flow-state
           @if (activeTab() === 'persona') {
             <div class="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                 <p class="text-xs text-[#C4C7C5]">Shape your thinking partner.</p>
+
+                <!-- NEW MODEL SELECTOR -->
+                 <div>
+                    <div class="text-xs font-bold text-[#C4C7C5] uppercase tracking-wider mb-2">AI Model</div>
+                    <div class="relative">
+                        <select 
+                            [(ngModel)]="tempModel"
+                            class="w-full bg-[#131314] border border-[#444746] rounded-xl px-4 py-3 text-sm text-[#E3E3E3] focus:outline-none focus:border-[#D0BCFF] focus:ring-1 focus:ring-[#D0BCFF] appearance-none cursor-pointer transition-all hover:border-[#8E918F]"
+                        >
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash (gemini-2.5-flash)</option>
+                            <option value="gemini-2.5-pro">Gemini 2.5 Pro (gemini-2.5-pro)</option>
+                            <option value="gemini-3-flash-preview">Gemini 3 Flash (gemini-3-flash-preview)</option>
+                        </select>
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#C4C7C5]">
+                            <span class="material-symbols-outlined text-sm">expand_more</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="h-px bg-[#444746]/50 my-4"></div>
+
                 <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                     <button (click)="setPreset('buddy')" class="px-4 py-2 rounded-xl bg-[#2B2930] hover:bg-[#D0BCFF] hover:text-[#381E72] text-xs font-medium text-[#C4C7C5] transition-colors whitespace-nowrap">Friendly</button>
                     <button (click)="setPreset('pro')" class="px-4 py-2 rounded-xl bg-[#2B2930] hover:bg-[#D0BCFF] hover:text-[#381E72] text-xs font-medium text-[#C4C7C5] transition-colors whitespace-nowrap">Professional</button>
@@ -180,20 +201,6 @@ import { FlowStateService, ThemeType, ModuleState } from '../services/flow-state
                            <span class="material-symbols-outlined text-[32px]">{{ flowService.activeModules().routine ? 'toggle_on' : 'toggle_off' }}</span>
                        </button>
                    </div>
-
-                   <!-- FLOWSCRIPT ENGINE -->
-                   <div class="flex items-center justify-between p-4 bg-[#2B2930] rounded-2xl border border-[#444746]">
-                       <div>
-                          <div class="flex items-center gap-2 mb-1">
-                              <span class="text-sm font-medium text-[#E3E3E3]">FlowScript Engine</span>
-                              <span class="px-1.5 py-0.5 rounded bg-yellow-900/40 text-yellow-200 text-[9px] font-bold tracking-wider">CANARY</span>
-                          </div>
-                          <div class="text-[10px] text-[#C4C7C5]">Advanced automation and scripting.</div>
-                       </div>
-                       <button (click)="toggleModule('flowscript', !flowService.activeModules().flowscript)" class="text-[#D0BCFF] hover:text-[#EADDFF] transition-colors">
-                           <span class="material-symbols-outlined text-[32px]">{{ flowService.activeModules().flowscript ? 'toggle_on' : 'toggle_off' }}</span>
-                       </button>
-                   </div>
                 </div>
              </div>
           }
@@ -220,6 +227,7 @@ export class SettingsModalComponent {
   tempPersona = '';
   tempTheme: ThemeType = 'material';
   tempWallpaper = '';
+  tempModel = 'gemini-2.5-pro';
 
   constructor() {
     effect(() => {
@@ -228,6 +236,7 @@ export class SettingsModalComponent {
             this.tempPersona = this.flowService.userPersona();
             this.tempTheme = this.flowService.theme();
             this.tempWallpaper = this.flowService.wallpaper() || '';
+            this.tempModel = this.flowService.selectedModel(); 
             this.activeTab.set('persona');
         }
     });
@@ -241,6 +250,7 @@ export class SettingsModalComponent {
     this.flowService.updatePersona(this.tempPersona);
     this.flowService.setTheme(this.tempTheme);
     this.flowService.setWallpaper(this.tempWallpaper.trim() || null);
+    this.flowService.setModel(this.tempModel);
     this.close();
   }
 

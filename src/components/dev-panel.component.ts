@@ -16,8 +16,8 @@ import { FlowStateService } from '../services/flow-state.service';
         <!-- Header -->
         <div class="h-16 px-6 flex items-center justify-between border-b border-[#444746] bg-[#1E1F20]">
           <div class="flex items-center gap-3">
-             <div class="px-2 py-1 rounded bg-red-900/30 border border-red-500/30 text-red-400 text-[10px] font-bold tracking-wider uppercase">Dev Mode</div>
-             <h2 class="text-[#E3E3E3] font-medium">System Instructions</h2>
+             <div class="px-2 py-1 rounded bg-red-900/30 border border-red-500/30 text-red-400 text-[10px] font-bold tracking-wider uppercase">Dev Engine</div>
+             <h2 class="text-[#E3E3E3] font-medium">Core Configuration</h2>
           </div>
           <button (click)="close()" class="w-8 h-8 rounded-full hover:bg-[#2B2930] flex items-center justify-center text-[#C4C7C5] transition-colors">
             <span class="material-symbols-outlined">close</span>
@@ -26,17 +26,62 @@ import { FlowStateService } from '../services/flow-state.service';
 
         <!-- Warning -->
         <div class="px-6 py-3 bg-red-900/10 border-b border-red-500/20 text-red-200 text-xs flex items-center gap-2">
-           <span class="material-symbols-outlined text-[16px]">warning</span>
-           Changes here affect the AI's core behavior immediately. Use with caution.
+           <span class="material-symbols-outlined text-[16px]">terminal</span>
+           <span>Developer Access: Changes affect application logic and connectivity immediately.</span>
         </div>
 
-        <!-- Editor -->
-        <div class="flex-1 relative">
-          <textarea 
-            [(ngModel)]="tempInstruction"
-            class="w-full h-full bg-[#131314] text-[#C4C7C5] font-mono text-xs p-6 resize-none focus:outline-none leading-relaxed"
-            spellcheck="false"
-          ></textarea>
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+            <!-- API Configuration -->
+            <div class="p-6 border-b border-[#444746] bg-[#18181b]">
+                <h3 class="text-[#E3E3E3] text-sm font-bold uppercase tracking-wide mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm text-[#D0BCFF]">api</span> API Settings
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- API KEY -->
+                    <div class="space-y-2">
+                        <label class="text-[10px] text-[#8E918F] font-bold uppercase tracking-wider">Gemini API Key</label>
+                        <div class="relative">
+                            <input 
+                                type="password" 
+                                [(ngModel)]="tempKey"
+                                placeholder="sk-..."
+                                class="w-full bg-[#131314] border border-[#444746] rounded-lg px-3 py-2 text-sm text-[#E3E3E3] focus:outline-none focus:border-[#D0BCFF] font-mono tracking-wide"
+                            >
+                        </div>
+                        <p class="text-[10px] text-[#5E5E5E]">Overrides env variable. Stored locally.</p>
+                    </div>
+
+                    <!-- MODEL SELECTION -->
+                    <div class="space-y-2">
+                        <label class="text-[10px] text-[#8E918F] font-bold uppercase tracking-wider">Active Model</label>
+                        <select 
+                            [(ngModel)]="tempModel"
+                            class="w-full bg-[#131314] border border-[#444746] rounded-lg px-3 py-2 text-sm text-[#E3E3E3] focus:outline-none focus:border-[#D0BCFF]"
+                        >
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                            <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+                            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Legacy)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Instruction Editor -->
+            <div class="flex flex-col h-[500px]">
+                 <div class="px-6 py-4 border-b border-[#444746] bg-[#18181b] flex items-center justify-between">
+                     <h3 class="text-[#E3E3E3] text-sm font-bold uppercase tracking-wide flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm text-[#D0BCFF]">psychology</span> System Prompt
+                     </h3>
+                     <span class="text-[10px] text-[#5E5E5E]">Hot-swappable</span>
+                 </div>
+                 <textarea 
+                    [(ngModel)]="tempInstruction"
+                    class="flex-1 bg-[#131314] text-[#C4C7C5] font-mono text-xs p-6 resize-none focus:outline-none leading-relaxed border-none"
+                    spellcheck="false"
+                 ></textarea>
+            </div>
         </div>
 
         <!-- Footer -->
@@ -46,12 +91,12 @@ import { FlowStateService } from '../services/flow-state.service';
              class="text-red-400 hover:text-red-300 text-xs font-medium hover:underline flex items-center gap-2"
            >
              <span class="material-symbols-outlined text-[16px]">restart_alt</span>
-             Reset to Default
+             Reset Defaults
            </button>
 
            <div class="flex gap-3">
              <button (click)="close()" class="px-5 py-2 rounded-full border border-[#444746] text-[#C4C7C5] text-xs font-medium hover:bg-[#2B2930]">Cancel</button>
-             <button (click)="save()" class="px-6 py-2 rounded-full bg-[#D0BCFF] text-[#381E72] text-xs font-bold hover:bg-[#EADDFF] shadow-lg">Save Changes</button>
+             <button (click)="save()" class="px-6 py-2 rounded-full bg-[#D0BCFF] text-[#381E72] text-xs font-bold hover:bg-[#EADDFF] shadow-lg">Apply Configuration</button>
            </div>
         </div>
       </div>
@@ -61,12 +106,16 @@ import { FlowStateService } from '../services/flow-state.service';
 export class DevPanelComponent {
   flowService = inject(FlowStateService);
   tempInstruction = '';
+  tempKey = '';
+  tempModel = '';
 
   constructor() {
     effect(() => {
         // Initialize with current value when panel opens
         if (this.flowService.showDevPanel()) {
             this.tempInstruction = this.flowService.systemInstructionTemplate();
+            this.tempKey = this.flowService.apiKey();
+            this.tempModel = this.flowService.selectedModel();
         }
     });
   }
@@ -83,8 +132,19 @@ export class DevPanelComponent {
   }
 
   save() {
+      // 1. Update Key
+      // Always call updateApiKey to ensure state sync, especially if user clears it
+      this.flowService.updateApiKey(this.tempKey);
+      
+      // 2. Update Model
+      if (this.tempModel !== this.flowService.selectedModel()) {
+          this.flowService.setModel(this.tempModel);
+      }
+
+      // 3. Update Instruction
       this.flowService.systemInstructionTemplate.set(this.tempInstruction);
-      this.flowService.addSystemMessage("🛠️ System Instructions Updated");
+      
+      this.flowService.addSystemMessage("🛠️ Dev Engine: Configuration Updated");
       this.close();
   }
 }

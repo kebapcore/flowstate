@@ -2,9 +2,9 @@ services:
   - type: static
     name: flowstate
     env: static
-    buildCommand: npm run build
-    staticPublishPath: ./dist
+    buildCommand: npm install && npm run build
+    publishPath: dist
     routes:
-      - type: rewrite
-        source: /*
+      - source: /.*
         destination: /index.html
+        type: rewrite

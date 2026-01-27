@@ -14,13 +14,12 @@ import { MediaPlayerComponent } from './media-player.component';
     <div 
       class="h-full flex flex-col w-full relative p-6 pt-20 md:pt-6 transition-all duration-700 ease-in-out"
       [class.font-sans]="flowService.theme() === 'cold'"
-      [class.bg-[#1E1F20]]="!flowService.wallpaper() && flowService.theme() === 'material'"
+      [class.bg-[#121212]]="!flowService.wallpaper() && flowService.theme() === 'material'"
       [class.bg-black]="!flowService.wallpaper() && flowService.theme() === 'cold'"
-      [class.bg-opacity-80]="!!flowService.wallpaper() && flowService.theme() === 'material'"
-      [class.bg-opacity-60]="!!flowService.wallpaper() && flowService.theme() === 'cold'"
-      [class.backdrop-blur-xl]="!!flowService.wallpaper()"
-      [class.border]="flowService.theme() === 'cold'"
-      [class.border-white-10]="flowService.theme() === 'cold'"
+      [class.bg-opacity-90]="!!flowService.wallpaper()"
+      [class.backdrop-blur-2xl]="!!flowService.wallpaper()"
+      [class.border-l]="flowService.theme() === 'cold'"
+      [class.border-white-5]="flowService.theme() === 'cold'"
       [class.md:rounded-[32px]]="flowService.theme() === 'material'"
       [class.md:rounded-2xl]="flowService.theme() === 'cold'"
     >
@@ -29,37 +28,32 @@ import { MediaPlayerComponent } from './media-player.component';
       @if (flowService.activeAgent()) {
           <!-- (Agent Chat UI) -->
           <div class="flex-1 flex flex-col h-full animate-in fade-in slide-in-from-right-4">
-              <div class="flex items-center justify-between mb-4 border-b border-[#444746] pb-4">
-                  <div class="flex items-center gap-3">
-                      <div class="w-10 h-10 rounded-full bg-[#D0BCFF] text-[#381E72] flex items-center justify-center shadow-lg">
-                          <span class="material-symbols-outlined">smart_toy</span>
+              <div class="flex items-center justify-between mb-5 border-b border-[#2B2930] pb-4">
+                  <div class="flex items-center gap-4">
+                      <div class="w-10 h-10 rounded-xl bg-[#D0BCFF] text-[#381E72] flex items-center justify-center shadow-lg">
+                          <span class="material-symbols-outlined text-xl">smart_toy</span>
                       </div>
                       <div>
-                          <h2 class="text-[#F2F2F2] font-bold text-lg leading-tight">{{ flowService.activeAgent()?.name }}</h2>
-                          <div class="text-[#C4C7C5] text-[10px] uppercase tracking-wider">AI Agent Session</div>
+                          <h2 class="text-[#F2F2F2] font-bold text-base leading-tight">{{ flowService.activeAgent()?.name }}</h2>
+                          <div class="text-[#8E918F] text-xs uppercase tracking-wider mt-0.5">Session Active</div>
                       </div>
                   </div>
-                  <button (click)="flowService.closeAgent()" class="w-8 h-8 rounded-full bg-[#2B2930] hover:bg-[#FFB4AB] hover:text-[#690005] text-[#C4C7C5] flex items-center justify-center transition-colors">
-                      <span class="material-symbols-outlined text-lg">close</span>
+                  <button (click)="flowService.closeAgent()" class="w-8 h-8 rounded-full hover:bg-white/5 text-[#8E918F] flex items-center justify-center transition-colors">
+                      <span class="material-symbols-outlined text-xl">close</span>
                   </button>
               </div>
               <div class="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar mb-4" #agentScroll>
                   @for (msg of flowService.activeAgent()?.messages; track $index) {
                       <div [class]="'flex ' + (msg.role === 'user' ? 'justify-end' : 'justify-start')">
-                          <div [class]="'max-w-[90%] px-4 py-3 text-xs leading-relaxed rounded-2xl shadow-sm ' + (msg.role === 'user' ? 'bg-[#4F378B] text-[#EADDFF] rounded-br-sm' : 'bg-[#2B2930] text-[#E3E3E3] rounded-bl-sm')">
+                          <div [class]="'max-w-[90%] px-5 py-3 text-sm leading-relaxed rounded-2xl ' + (msg.role === 'user' ? 'bg-[#27272a] text-[#E3E3E3]' : 'bg-[#18181b] text-[#C4C7C5] border border-white/5')">
                                <div class="prose prose-invert prose-p:text-inherit" [innerHTML]="msg.displayHtml"></div>
                           </div>
                       </div>
                   }
-                  @if (flowService.activeAgent()?.isLoading) {
-                      <div class="flex justify-start">
-                          <div class="bg-[#2B2930] px-4 py-3 rounded-2xl rounded-bl-sm flex gap-1"><span class="w-1.5 h-1.5 bg-[#8E918F] rounded-full animate-bounce"></span><span class="w-1.5 h-1.5 bg-[#8E918F] rounded-full animate-bounce delay-75"></span><span class="w-1.5 h-1.5 bg-[#8E918F] rounded-full animate-bounce delay-150"></span></div>
-                      </div>
-                  }
               </div>
               <div class="relative">
-                  <textarea [(ngModel)]="agentInput" (keydown.enter)="sendAgentMessage($event)" placeholder="Message..." class="w-full bg-[#131314] border border-[#444746] rounded-2xl pl-4 pr-12 py-3 text-sm text-[#E3E3E3] focus:outline-none focus:border-[#D0BCFF] resize-none shadow-inner" rows="1"></textarea>
-                  <button (click)="sendAgentMessage()" [disabled]="!agentInput.trim() || flowService.activeAgent()?.isLoading" class="absolute right-2 top-2 w-8 h-8 rounded-full bg-[#D0BCFF] text-[#381E72] flex items-center justify-center hover:scale-105 transition-transform disabled:opacity-50 disabled:scale-100"><span class="material-symbols-outlined text-sm">arrow_upward</span></button>
+                  <textarea [(ngModel)]="agentInput" (keydown.enter)="sendAgentMessage($event)" placeholder="Message..." class="w-full bg-[#18181b] border border-[#2B2930] rounded-2xl pl-5 pr-12 py-4 text-sm text-[#E3E3E3] focus:outline-none focus:border-[#444746] resize-none shadow-inner" rows="1"></textarea>
+                  <button (click)="sendAgentMessage()" [disabled]="!agentInput.trim() || flowService.activeAgent()?.isLoading" class="absolute right-3 top-3 w-8 h-8 rounded-xl text-[#D0BCFF] flex items-center justify-center hover:bg-white/5 transition-all disabled:opacity-30"><span class="material-symbols-outlined text-lg">arrow_upward</span></button>
               </div>
           </div>
       } 
@@ -67,28 +61,28 @@ import { MediaPlayerComponent } from './media-player.component';
       @else if (flowService.activeTest()) {
           <div class="flex-1 flex flex-col h-full animate-in fade-in slide-in-from-right-4">
               <!-- Header -->
-              <div class="flex items-center justify-between mb-6 border-b border-[#444746] pb-4">
-                  <div class="flex items-center gap-3">
-                      <div class="w-10 h-10 rounded-full bg-[#D0BCFF] text-[#381E72] flex items-center justify-center shadow-lg">
-                          <span class="material-symbols-outlined">quiz</span>
+              <div class="flex items-center justify-between mb-5 border-b border-[#2B2930] pb-4">
+                  <div class="flex items-center gap-4">
+                      <div class="w-10 h-10 rounded-xl bg-[#D0BCFF] text-[#381E72] flex items-center justify-center shadow-lg">
+                          <span class="material-symbols-outlined text-xl">quiz</span>
                       </div>
                       <div>
-                          <h2 class="text-[#F2F2F2] font-bold text-lg leading-tight truncate max-w-[200px]">{{ flowService.activeTest()?.topic }}</h2>
-                          <div class="text-[#C4C7C5] text-[10px] uppercase tracking-wider">Interactive Assessment</div>
+                          <h2 class="text-[#F2F2F2] font-bold text-base leading-tight truncate max-w-[200px]">{{ flowService.activeTest()?.topic }}</h2>
+                          <div class="text-[#8E918F] text-xs uppercase tracking-wider mt-0.5">Assessment</div>
                       </div>
                   </div>
-                  <button (click)="flowService.closeTest()" class="w-8 h-8 rounded-full bg-[#2B2930] hover:bg-[#FFB4AB] hover:text-[#690005] text-[#C4C7C5] flex items-center justify-center transition-colors">
-                      <span class="material-symbols-outlined text-lg">close</span>
+                  <button (click)="flowService.closeTest()" class="w-8 h-8 rounded-full hover:bg-white/5 text-[#8E918F] flex items-center justify-center transition-colors">
+                      <span class="material-symbols-outlined text-xl">close</span>
                   </button>
               </div>
 
               <!-- Questions List -->
-              <div class="flex-1 overflow-y-auto space-y-8 pr-1 custom-scrollbar pb-10">
+              <div class="flex-1 overflow-y-auto space-y-8 pr-2 custom-scrollbar pb-10">
                   @for (q of flowService.activeTest()?.questions; track q.id; let idx = $index) {
-                      <div class="p-4 bg-[#2B2930] rounded-2xl border border-[#444746]">
-                          <div class="flex gap-3 mb-4">
-                              <span class="text-[#D0BCFF] font-bold font-mono text-lg opacity-50">0{{idx+1}}</span>
-                              <div class="text-[#E3E3E3] font-medium leading-relaxed">{{ q.question }}</div>
+                      <div class="p-5 bg-[#18181b] rounded-2xl border border-white/5 shadow-sm">
+                          <div class="flex gap-4 mb-4">
+                              <span class="text-[#D0BCFF] font-bold font-mono text-lg opacity-40">0{{idx+1}}</span>
+                              <div class="text-[#E3E3E3] font-medium leading-relaxed text-base">{{ q.question }}</div>
                           </div>
 
                           <!-- AUDIO PLAYER EMBED -->
@@ -103,18 +97,18 @@ import { MediaPlayerComponent } from './media-player.component';
                                  <button 
                                    (click)="answerQuestion(q.id, opt.key)"
                                    [disabled]="isQuestionAnswered(q.id)"
-                                   class="w-full text-left px-4 py-3 rounded-xl transition-all border flex items-center gap-3 group relative overflow-hidden"
+                                   class="w-full text-left px-4 py-3.5 rounded-xl transition-all border flex items-center gap-4 group relative overflow-hidden"
                                    [class.bg-[#1E1F20]]="!isQuestionAnswered(q.id)"
-                                   [class.hover:bg-[#444746]]="!isQuestionAnswered(q.id)"
+                                   [class.hover:bg-[#27272a]]="!isQuestionAnswered(q.id)"
                                    [class.border-transparent]="!isQuestionAnswered(q.id)"
-                                   [class.bg-green-900/30]="isQuestionAnswered(q.id) && opt.key === q.correctKey"
-                                   [class.border-green-500/50]="isQuestionAnswered(q.id) && opt.key === q.correctKey"
+                                   [class.bg-green-900/20]="isQuestionAnswered(q.id) && opt.key === q.correctKey"
+                                   [class.border-green-500/30]="isQuestionAnswered(q.id) && opt.key === q.correctKey"
                                    [class.text-green-100]="isQuestionAnswered(q.id) && opt.key === q.correctKey"
-                                   [class.bg-red-900/30]="isQuestionAnswered(q.id) && getUserAnswer(q.id) === opt.key && opt.key !== q.correctKey"
-                                   [class.border-red-500/50]="isQuestionAnswered(q.id) && getUserAnswer(q.id) === opt.key && opt.key !== q.correctKey"
+                                   [class.bg-red-900/20]="isQuestionAnswered(q.id) && getUserAnswer(q.id) === opt.key && opt.key !== q.correctKey"
+                                   [class.border-red-500/30]="isQuestionAnswered(q.id) && getUserAnswer(q.id) === opt.key && opt.key !== q.correctKey"
                                    [class.opacity-50]="isQuestionAnswered(q.id) && opt.key !== q.correctKey && getUserAnswer(q.id) !== opt.key"
                                  >
-                                     <span class="w-6 h-6 rounded-full border border-white/20 flex items-center justify-center text-xs font-bold"
+                                     <span class="w-6 h-6 rounded-lg border border-white/10 flex items-center justify-center text-xs font-bold"
                                         [class.bg-green-500]="isQuestionAnswered(q.id) && opt.key === q.correctKey"
                                         [class.bg-red-500]="isQuestionAnswered(q.id) && getUserAnswer(q.id) === opt.key && opt.key !== q.correctKey"
                                         [class.border-transparent]="isQuestionAnswered(q.id) && (opt.key === q.correctKey || getUserAnswer(q.id) === opt.key)"
@@ -128,25 +122,14 @@ import { MediaPlayerComponent } from './media-player.component';
 
                           <!-- Explanation Box -->
                           @if (isQuestionAnswered(q.id)) {
-                             <div class="mt-4 p-3 rounded-xl bg-[#1E1F20] border border-white/5 animate-in fade-in slide-in-from-top-2">
-                                <div class="flex items-center gap-2 mb-1 text-[10px] uppercase tracking-wider font-bold opacity-60">
-                                   <span class="material-symbols-outlined text-sm">lightbulb</span> Explanation
+                             <div class="mt-4 p-4 rounded-xl bg-black/30 border border-white/5 animate-in fade-in slide-in-from-top-2">
+                                <div class="flex items-center gap-2 mb-1 text-[10px] uppercase tracking-wider font-bold opacity-50">
+                                   <span class="material-symbols-outlined text-sm">lightbulb</span> Insight
                                 </div>
-                                <p class="text-xs text-[#C4C7C5] leading-relaxed">{{ q.explanation }}</p>
+                                <p class="text-sm text-[#C4C7C5] leading-relaxed">{{ q.explanation }}</p>
                              </div>
                           }
                       </div>
-                  }
-
-                  @if (flowService.activeTest()?.completed) {
-                     <div class="text-center py-6 animate-in zoom-in duration-500">
-                        <div class="w-16 h-16 rounded-full bg-[#D0BCFF] text-[#381E72] flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(208,188,255,0.4)]">
-                            <span class="material-symbols-outlined text-[32px]">emoji_events</span>
-                        </div>
-                        <h3 class="text-xl font-bold text-[#F2F2F2] mb-1">Quiz Completed!</h3>
-                        <p class="text-sm text-[#C4C7C5]">Your results have been sent to the AI for analysis.</p>
-                        <button (click)="flowService.closeTest()" class="mt-4 px-6 py-2 rounded-full bg-[#444746] hover:bg-[#5E5E5E] text-white text-sm font-medium transition-colors">Close Quiz</button>
-                     </div>
                   }
               </div>
           </div>
@@ -155,99 +138,102 @@ import { MediaPlayerComponent } from './media-player.component';
       <!-- ==================== STANDARD MODE ==================== -->
       @else {
       
-      <!-- Title -->
-      <h2 class="text-xl font-medium text-[#F2F2F2] mb-6 px-1">
-          {{ flowService.appMode() === 'study' ? 'Curriculum' : 'Game Plan' }}
-      </h2>
-
-      <!-- Segmented Tab Switcher -->
-      <div class="flex bg-[#2B2930] p-1 rounded-full mb-6 relative">
-        <!-- ROUTINE (For Study Mode it's critical) -->
-        @if (flowService.activeModules().routine) {
-            <button 
-            (click)="activeTab.set('routine')"
-            class="flex-1 py-2.5 text-xs font-medium rounded-full transition-all duration-200 z-10"
-            [class.bg-[#444746]]="activeTab() === 'routine'"
-            [class.text-[#F2F2F2]]="activeTab() === 'routine'"
-            [class.text-[#C4C7C5]]="activeTab() !== 'routine'"
-            [class.shadow-md]="activeTab() === 'routine'"
-            >
-            Routine
-            </button>
-        }
-        
-        <button 
-          (click)="activeTab.set('plan')"
-          class="flex-1 py-2.5 text-xs font-medium rounded-full transition-all duration-200 z-10"
-          [class.bg-[#444746]]="activeTab() === 'plan'"
-          [class.text-[#F2F2F2]]="activeTab() === 'plan'"
-          [class.text-[#C4C7C5]]="activeTab() !== 'plan'"
-          [class.shadow-md]="activeTab() === 'plan'"
-        >
-          {{ flowService.appMode() === 'study' ? 'Lessons' : 'Tasks' }}
-        </button>
-        <button 
-          (click)="activeTab.set('notes')"
-          class="flex-1 py-2.5 text-xs font-medium rounded-full transition-all duration-200 z-10"
-          [class.bg-[#444746]]="activeTab() === 'notes'"
-          [class.text-[#F2F2F2]]="activeTab() === 'notes'"
-          [class.text-[#C4C7C5]]="activeTab() !== 'notes'"
-          [class.shadow-md]="activeTab() === 'notes'"
-        >
-          Notes
-        </button>
-
-        <!-- FILES -->
-        @if (flowService.activeModules().files) {
-            <button (click)="activeTab.set('files')" class="flex-1 py-2.5 text-xs font-medium rounded-full transition-all duration-200 z-10" [class.bg-[#444746]]="activeTab() === 'files'" [class.text-[#F2F2F2]]="activeTab() === 'files'" [class.text-[#C4C7C5]]="activeTab() !== 'files'">Files</button>
-        }
+      <!-- Header -->
+      <div class="flex justify-between items-center mb-6 px-1">
+          <h2 class="text-base font-semibold text-[#E3E3E3] tracking-wide uppercase">
+              {{ flowService.appMode() === 'study' ? 'Curriculum' : 'Workspace' }}
+          </h2>
+          <!-- Tab Switcher (Compact) -->
+          <div class="flex bg-[#18181b] p-1 rounded-xl border border-white/5">
+                @if (flowService.activeModules().routine) {
+                    <button (click)="activeTab.set('routine')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-colors" [class.bg-[#27272a]]="activeTab() === 'routine'" [class.text-white]="activeTab() === 'routine'" [class.text-[#8E918F]]="activeTab() !== 'routine'">Routine</button>
+                }
+                <button (click)="activeTab.set('plan')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-colors" [class.bg-[#27272a]]="activeTab() === 'plan'" [class.text-white]="activeTab() === 'plan'" [class.text-[#8E918F]]="activeTab() !== 'plan'">Plan</button>
+                <button (click)="activeTab.set('notes')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-colors" [class.bg-[#27272a]]="activeTab() === 'notes'" [class.text-white]="activeTab() === 'notes'" [class.text-[#8E918F]]="activeTab() !== 'notes'">Notes</button>
+                @if (flowService.activeModules().files) {
+                    <button (click)="activeTab.set('files')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-colors" [class.bg-[#27272a]]="activeTab() === 'files'" [class.text-white]="activeTab() === 'files'" [class.text-[#8E918F]]="activeTab() !== 'files'">Files</button>
+                }
+          </div>
       </div>
 
       <!-- Content Area -->
-      <div class="flex-1 overflow-y-auto pr-1 -mr-2 custom-scrollbar pb-20">
+      <div class="flex-1 overflow-y-auto pr-1 -mr-2 custom-scrollbar pb-24 relative">
         
         <!-- ROUTINE VIEW -->
         @if (activeTab() === 'routine' && flowService.activeModules().routine) {
            @if (flowService.routineBlocks().length === 0) {
-              <div class="flex flex-col items-center justify-center mt-20 opacity-30 text-[#C4C7C5]">
+              <div class="flex flex-col items-center justify-center mt-20 opacity-20 text-[#C4C7C5]">
                 <span class="material-symbols-outlined text-5xl mb-3">schedule</span>
-                <p class="text-sm font-medium">Ask Flowstate to "Plan a session"</p>
+                <p class="text-sm font-medium">No schedule</p>
               </div>
            }
-           <div class="relative pl-2 space-y-4"> 
-             <div class="absolute left-[54px] top-4 bottom-4 w-[2px] bg-[#2B2930] -z-0"></div>
+
+           <!-- PRE-START OVERLAY -->
+           @if (minutesUntilStart() > 0) {
+              <div class="absolute inset-0 z-30 flex flex-col items-center justify-center backdrop-blur-md bg-black/40 rounded-xl text-center p-6 animate-in fade-in duration-500">
+                  <span class="material-symbols-outlined text-4xl mb-4 text-[#D0BCFF] animate-bounce">hourglass_top</span>
+                  <h3 class="text-xl font-bold text-white mb-2">Upcoming Session</h3>
+                  <p class="text-sm text-[#C4C7C5] max-w-[200px] mb-6">Your routine hasn't started yet. Take a breath.</p>
+                  <div class="bg-[#18181b] border border-[#444746] rounded-xl px-4 py-2 flex items-center gap-2">
+                     <span class="text-xs uppercase font-bold text-[#8E918F] tracking-wider">Starts in</span>
+                     <span class="text-lg font-mono font-bold text-[#E3E3E3]">{{ minutesUntilStart() }}m</span>
+                  </div>
+              </div>
+           }
+
+           <div class="relative pl-0 space-y-4" [class.opacity-30]="minutesUntilStart() > 0" [class.pointer-events-none]="minutesUntilStart() > 0"> 
+             <!-- Timeline line -->
+             <div class="absolute left-[54px] top-4 bottom-4 w-px bg-[#27272a] -z-0"></div>
+             
              @for (block of flowService.routineBlocks(); track block.id) {
-               <div class="relative flex gap-4 z-10 group">
-                 <div class="w-10 text-right pt-2 flex flex-col items-end flex-shrink-0">
-                   <!-- Use block.time explicitly as requested -->
-                   <span class="text-[10px] font-medium text-[#C4C7C5] leading-tight" [class.line-through]="block.status === 'completed' || block.status === 'skipped'" [class.opacity-50]="block.status === 'skipped'">
+               <div class="relative flex gap-5 z-10 group items-start">
+                 
+                 <!-- Time Column (Outside Card) -->
+                 <div class="w-[50px] text-right pt-2.5 flex flex-col items-end flex-shrink-0">
+                   <span class="text-xs font-mono text-[#8E918F] leading-tight" [class.line-through]="block.status === 'completed' || block.status === 'skipped'" [class.opacity-50]="block.status === 'skipped'">
                       {{ block.startTime }}
                    </span>
-                   <span class="text-[9px] text-[#8E918F] font-medium">{{ block.duration }}</span>
                  </div>
-                 <div class="relative mt-2.5 w-3 h-3 rounded-full border-2 border-[#1E1F20] shadow-sm flex-shrink-0 transition-colors duration-500" [class.bg-[#D0BCFF]]="block.status === 'active'" [class.scale-125]="block.status === 'active'" [class.bg-[#444746]]="block.status === 'upcoming'" [class.bg-[#2B2930]]="block.status === 'completed'" [class.bg-red-900]="block.status === 'skipped'">
+
+                 <!-- Timeline Dot -->
+                 <div class="relative mt-3 w-2.5 h-2.5 rounded-full border border-[#27272a] flex-shrink-0 transition-all duration-500 bg-[#18181b]" 
+                    [class.bg-[#D0BCFF]]="block.status === 'active'" 
+                    [class.border-[#D0BCFF]]="block.status === 'active'" 
+                    [class.scale-125]="block.status === 'active'"
+                    [class.opacity-50]="block.status === 'completed'"
+                 >
                    @if (block.status === 'active') { <div class="absolute -inset-1 bg-[#D0BCFF] rounded-full animate-ping opacity-30"></div> }
                  </div>
-                 <div class="flex-1 p-5 rounded-[20px] transition-all duration-500 border relative overflow-hidden" 
-                    [class.bg-[#2B2930]]="block.status !== 'active'" 
-                    [class.border-[#444746]/50]="block.status !== 'active'" 
+
+                 <!-- Card -->
+                 <div class="flex-1 p-5 rounded-2xl transition-all duration-500 border relative overflow-hidden group/card shadow-sm" 
+                    [class.bg-[#18181b]]="block.status !== 'active'" 
+                    [class.border-[#27272a]]="block.status !== 'active'" 
                     [class.opacity-60]="block.status === 'completed'" 
                     [class.opacity-40]="block.status === 'skipped'" 
-                    [class.bg-[#4F378B]]="block.status === 'active'" 
-                    [class.text-[#EADDFF]]="block.status === 'active'" 
-                    [class.shadow-xl]="block.status === 'active'" 
-                    [class.border-[#D0BCFF]/30]="block.status === 'active'">
+                    
+                    [class.bg-[#1d1b24]]="block.status === 'active'" 
+                    [class.border-[#D0BCFF]/30]="block.status === 'active'"
+                    [class.shadow-md]="block.status === 'active'"
+                 >
                    
                    <!-- REMAINING TIME OVERLAY FOR ACTIVE BLOCK -->
                    @if (block.status === 'active' && block.remainingLabel) {
-                       <div class="absolute top-0 right-0 px-3 py-1 bg-black/20 rounded-bl-xl text-[10px] font-bold tracking-wider animate-in fade-in">
+                       <div class="absolute top-4 right-4 text-xs font-bold tracking-wider animate-in fade-in text-[#D0BCFF]">
                           {{ block.remainingLabel }}
                        </div>
                    }
 
-                   <div class="flex justify-between items-start mb-1"><h4 class="text-sm font-medium leading-snug">{{ block.title }}</h4>@if(block.type==='break'){<span class="material-symbols-outlined text-[16px] opacity-70">coffee</span>}</div>
-                   @if(block.description){<p class="text-[11px] leading-relaxed opacity-80 mb-2">{{ block.description }}</p>}
-                   <div class="text-[10px] uppercase tracking-wider opacity-70 font-semibold flex justify-between"><span>{{ block.type }}</span>@if(block.status==='skipped'){<span>SKIPPED</span>}</div>
+                   <div class="flex justify-between items-start mb-1">
+                       <h4 class="text-sm font-bold leading-snug" [class.text-[#F2F2F2]]="block.status === 'active'" [class.text-[#E3E3E3]]="block.status !== 'active'">{{ block.title }}</h4>
+                   </div>
+                   
+                   @if(block.description){<p class="text-xs leading-relaxed opacity-70 mb-3 text-[#C4C7C5] max-w-[90%]">{{ block.description }}</p>}
+                   
+                   <div class="flex items-center gap-2">
+                       <span class="text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-md bg-white/5 text-[#8E918F]">{{ block.type }}</span>
+                       <span class="text-[10px] text-[#5E5E5E]">{{ block.duration }}</span>
+                   </div>
                  </div>
                </div>
              }
@@ -258,50 +244,58 @@ import { MediaPlayerComponent } from './media-player.component';
         @if (activeTab() === 'plan') {
           <div class="mb-8 px-1">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-[10px] font-bold text-[#C4C7C5] uppercase tracking-wider">{{ flowService.appMode() === 'study' ? 'Course Progress' : 'Completion' }}</span>
-              <span class="text-xs font-bold text-[#D0BCFF]">{{ flowService.completionPercentage() }}%</span>
+              <span class="text-[10px] font-bold text-[#5E5E5E] uppercase tracking-wider">Progress</span>
+              <span class="text-xs font-bold text-[#C4C7C5] font-mono">{{ flowService.completionPercentage() }}%</span>
             </div>
-            <div class="h-2 w-full bg-[#2B2930] rounded-full overflow-hidden">
-              <div class="h-full bg-[#D0BCFF] shadow-[0_0_10px_rgba(208,188,255,0.4)] transition-all duration-700 ease-out rounded-full" [style.width.%]="flowService.completionPercentage()"></div>
+            <div class="h-1.5 w-full bg-[#18181b] rounded-full overflow-hidden">
+              <div class="h-full bg-[#D0BCFF] transition-all duration-700 ease-out rounded-full" [style.width.%]="flowService.completionPercentage()"></div>
             </div>
           </div>
 
-          <div class="space-y-3">
+          <div class="space-y-4">
             @if (flowService.planSteps().length === 0) {
-              <div class="flex flex-col items-center justify-center mt-20 opacity-30 text-[#C4C7C5]">
+              <div class="flex flex-col items-center justify-center mt-20 opacity-20 text-[#C4C7C5]">
                 <span class="material-symbols-outlined text-5xl mb-3">map</span>
-                <p class="text-sm font-medium">Ready to map out {{ flowService.appMode() === 'study' ? 'curriculum' : 'ideas' }}.</p>
+                <p class="text-sm font-medium">Empty plan</p>
               </div>
             }
 
             @for (step of flowService.planSteps(); track step.id) {
-              <div class="relative pl-6 group">
-                 <div class="absolute left-[11px] top-6 bottom-[-24px] w-0.5 bg-[#444746] group-last:hidden"></div>
+              <div class="relative pl-8 group">
+                 <!-- Connecting Line -->
+                 <div class="absolute left-[11px] top-6 bottom-[-16px] w-px bg-[#27272a] group-last:hidden"></div>
                  
                  <div class="flex items-start gap-4">
-                   <div class="relative z-10 flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all mt-0.5" [class.border-[#D0BCFF]]="step.status === 'active' || step.status === 'finished'" [class.bg-[#D0BCFF]]="step.status === 'finished'" [class.border-[#444746]]="step.status === 'pending'" [class.bg-[#1E1F20]]="step.status !== 'finished'">
-                      @if (step.status === 'finished') { <span class="material-symbols-outlined text-[#381E72] text-[14px] font-bold">check</span> } @else if (step.status === 'active') { <div class="w-2 h-2 bg-[#D0BCFF] rounded-full animate-pulse"></div> }
+                   <div class="relative z-10 flex-shrink-0 w-6 h-6 rounded-full border flex items-center justify-center transition-all mt-0.5 bg-[#121212]" 
+                        [class.border-[#D0BCFF]]="step.status === 'active'" 
+                        [class.border-[#5E5E5E]]="step.status === 'pending'"
+                        [class.border-[#D0BCFF]/50]="step.status === 'finished'"
+                        [class.text-[#D0BCFF]]="step.status === 'finished'"
+                   >
+                      @if (step.status === 'finished') { <span class="material-symbols-outlined text-sm font-bold">check</span> } 
+                      @else if (step.status === 'active') { <div class="w-2 h-2 bg-[#D0BCFF] rounded-full animate-pulse"></div> }
                    </div>
-                   <div class="flex-1 p-4 rounded-[20px] transition-all duration-300 border border-transparent group/card hover:bg-[#2B2930]" [class.bg-[#2B2930]]="step.status === 'active'" [class.shadow-md]="step.status === 'active'">
+                   
+                   <div class="flex-1 p-5 rounded-2xl transition-all duration-300 border border-transparent group/card hover:bg-[#18181b] hover:border-[#27272a]">
                       <div class="flex justify-between items-start">
-                        <h4 class="text-sm font-medium mb-1 transition-colors" [class.text-[#F2F2F2]]="step.status === 'active'" [class.text-[#E3E3E3]]="step.status === 'finished'" [class.text-[#8E918F]]="step.status === 'pending'" [class.line-through]="step.status === 'finished'">{{ step.title }}</h4>
-                        <div class="flex items-center opacity-0 group-hover/card:opacity-100 transition-opacity">
-                          <button (click)="moveStep(step, 'up')" class="text-[#8E918F] hover:text-[#E3E3E3] p-1"><span class="material-symbols-outlined text-[16px]">arrow_upward</span></button>
-                          <button (click)="moveStep(step, 'down')" class="text-[#8E918F] hover:text-[#E3E3E3] p-1"><span class="material-symbols-outlined text-[16px]">arrow_downward</span></button>
-                          <div class="w-px h-3 bg-[#444746] mx-1"></div>
-                          <button (click)="editPlanStep(step)" class="text-[#8E918F] hover:text-[#D0BCFF] p-1"><span class="material-symbols-outlined text-[16px]">edit</span></button>
-                          <button (click)="deletePlanStep(step.id)" class="text-[#8E918F] hover:text-[#FFB4AB] p-1"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+                        <h4 class="text-sm font-medium mb-1 transition-colors" [class.text-[#F2F2F2]]="step.status === 'active'" [class.text-[#8E918F]]="step.status === 'pending'" [class.line-through]="step.status === 'finished'" [class.opacity-50]="step.status === 'finished'">{{ step.title }}</h4>
+                        
+                        <!-- Actions on Hover -->
+                        <div class="flex items-center opacity-0 group-hover/card:opacity-100 transition-opacity ml-2 bg-[#121212] rounded-lg p-0.5 border border-white/5">
+                          <button (click)="moveStep(step, 'up')" class="text-[#5E5E5E] hover:text-[#C4C7C5] p-1"><span class="material-symbols-outlined text-[16px]">arrow_upward</span></button>
+                          <button (click)="moveStep(step, 'down')" class="text-[#5E5E5E] hover:text-[#C4C7C5] p-1"><span class="material-symbols-outlined text-[16px]">arrow_downward</span></button>
+                          <button (click)="editPlanStep(step)" class="text-[#5E5E5E] hover:text-[#D0BCFF] p-1 ml-1"><span class="material-symbols-outlined text-[16px]">edit</span></button>
+                          <button (click)="deletePlanStep(step.id)" class="text-[#5E5E5E] hover:text-red-400 p-1 ml-1"><span class="material-symbols-outlined text-[16px]">delete</span></button>
                         </div>
                       </div>
-                      <!-- ENHANCED: Display Step Description -->
-                      @if(step.description) { <p class="text-xs text-[#C4C7C5] leading-relaxed mt-1 opacity-90">{{ step.description }}</p> }
+                      @if(step.description) { <p class="text-xs text-[#8E918F] leading-relaxed line-clamp-3">{{ step.description }}</p> }
                    </div>
                  </div>
               </div>
             }
 
-            <button (click)="startNewPlanStep()" class="w-full py-4 mt-4 border border-dashed border-[#444746] rounded-[20px] text-xs text-[#8E918F] hover:text-[#E3E3E3] hover:border-[#8E918F] hover:bg-[#2B2930] transition-all flex items-center justify-center space-x-2">
-              <span class="material-symbols-outlined text-sm">add_circle</span><span>Add {{ flowService.appMode() === 'study' ? 'Lesson' : 'Step' }}</span>
+            <button (click)="startNewPlanStep()" class="w-full py-4 mt-6 border border-dashed border-[#27272a] rounded-2xl text-xs text-[#5E5E5E] hover:text-[#C4C7C5] hover:border-[#444746] hover:bg-[#18181b] transition-all flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-base">add</span><span>Add Step</span>
             </button>
           </div>
         }
@@ -309,21 +303,20 @@ import { MediaPlayerComponent } from './media-player.component';
         <!-- NOTES VIEW -->
         @if (activeTab() === 'notes') {
           <div class="flex justify-between items-center mb-5 px-1">
-            <span class="text-[10px] font-bold text-[#C4C7C5] uppercase tracking-wider">Notebook</span>
-            <button (click)="startNewNote()" class="w-8 h-8 rounded-full bg-[#D0BCFF] hover:bg-[#EADDFF] text-[#381E72] flex items-center justify-center transition-colors shadow-sm" title="Create Note"><span class="material-symbols-outlined text-lg">add</span></button>
+            <span class="text-[10px] font-bold text-[#5E5E5E] uppercase tracking-wider">Entries</span>
+            <button (click)="startNewNote()" class="w-8 h-8 rounded-lg bg-[#27272a] hover:bg-[#D0BCFF] hover:text-[#381E72] text-[#C4C7C5] flex items-center justify-center transition-colors" title="Create Note"><span class="material-symbols-outlined text-lg">add</span></button>
           </div>
-          <div class="grid grid-cols-1 gap-4">
+          <div class="grid grid-cols-1 gap-3">
             @if (flowService.notes().length === 0) {
-              <div class="text-center mt-20 opacity-30 text-[#C4C7C5]"><span class="material-symbols-outlined text-5xl mb-2">description</span><p class="text-sm">Empty notebook.</p></div>
+              <div class="text-center mt-20 opacity-20 text-[#C4C7C5]"><span class="material-symbols-outlined text-5xl mb-3">description</span><p class="text-sm">No notes</p></div>
             }
             @for (note of flowService.notes(); track note.id) {
-              <div class="bg-[#2B2930] rounded-[24px] p-5 hover:shadow-lg transition-all group relative border border-transparent hover:border-[#444746]">
-                <div class="absolute top-4 right-4 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-[#2B2930] pl-2">
-                  <button (click)="editNote(note)" class="text-[#C4C7C5] hover:text-[#D0BCFF] p-1.5 hover:bg-[#444746] rounded-full transition-colors"><span class="material-symbols-outlined text-[16px]">edit</span></button>
-                  <button (click)="deleteNote(note.id)" class="text-[#C4C7C5] hover:text-[#FFB4AB] p-1.5 hover:bg-[#444746] rounded-full transition-colors"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+              <div class="bg-[#18181b] rounded-2xl p-5 hover:border-[#444746] transition-all group relative border border-white/5 cursor-pointer shadow-sm" (click)="editNote(note)">
+                <div class="absolute top-4 right-4 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-[#18181b] pl-2 z-10">
+                  <button (click)="$event.stopPropagation(); deleteNote(note.id)" class="text-[#5E5E5E] hover:text-red-400 p-1.5 rounded hover:bg-white/5 transition-colors"><span class="material-symbols-outlined text-sm">delete</span></button>
                 </div>
-                <h3 class="text-[#D0BCFF] text-xs font-bold uppercase tracking-wide mb-3 truncate pr-16">{{ note.title }}</h3>
-                <div class="prose prose-invert prose-sm text-[#E3E3E3] text-sm leading-relaxed line-clamp-4" [innerHTML]="render(note.content)"></div>
+                <h3 class="text-[#E3E3E3] text-sm font-bold mb-2 truncate pr-8">{{ note.title }}</h3>
+                <div class="prose prose-invert prose-sm text-[#8E918F] text-xs leading-relaxed line-clamp-4" [innerHTML]="render(note.content)"></div>
               </div>
             }
           </div>
@@ -331,27 +324,37 @@ import { MediaPlayerComponent } from './media-player.component';
         
         <!-- FILES VIEW -->
         @if (activeTab() === 'files' && flowService.activeModules().files) {
-             <div class="min-h-[100px] border-2 border-dashed border-[#444746] rounded-[24px] p-6 flex flex-col items-center justify-center text-[#8E918F] transition-all hover:border-[#D0BCFF] hover:bg-[#2B2930]/50 mb-6 group cursor-pointer" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
-                @if (flowService.files().length === 0) { <span class="material-symbols-outlined text-3xl mb-2 group-hover:text-[#D0BCFF] transition-colors">cloud_upload</span><p class="text-xs text-center">Drag & Drop files here</p> } @else { <div class="flex flex-col items-center"><span class="material-symbols-outlined text-2xl mb-1 text-[#D0BCFF]">add_circle</span><p class="text-[10px]">Add more files</p></div> }
+             <div class="min-h-[100px] border border-dashed border-[#27272a] rounded-2xl p-6 flex flex-col items-center justify-center text-[#5E5E5E] transition-all hover:border-[#D0BCFF] hover:bg-[#18181b] mb-6 group cursor-pointer" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
+                @if (flowService.files().length === 0) { <span class="material-symbols-outlined text-3xl mb-2 group-hover:text-[#D0BCFF] transition-colors">cloud_upload</span><p class="text-xs text-center">Drag files here</p> } @else { <div class="flex flex-col items-center"><span class="material-symbols-outlined text-2xl mb-2 text-[#D0BCFF]">add_circle</span><p class="text-xs">Add another file</p></div> }
             </div>
-             <!-- ... Files lists logic ... -->
+             <div class="space-y-3">
+                 @for (file of flowService.files(); track file.id) {
+                     <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-[#18181b] border border-transparent hover:border-white/5 group transition-colors">
+                         <div class="w-10 h-10 rounded-lg bg-[#27272a] flex items-center justify-center">
+                             <span class="material-symbols-outlined text-[#8E918F] text-xl">{{ getIcon(file) }}</span>
+                         </div>
+                         <span class="text-sm text-[#C4C7C5] truncate flex-1 font-medium">{{ file.name }}</span>
+                         <button (click)="deleteFile(file.id)" class="opacity-0 group-hover:opacity-100 text-[#5E5E5E] hover:text-red-400 p-2"><span class="material-symbols-outlined text-lg">close</span></button>
+                     </div>
+                 }
+             </div>
         }
       </div>
       } 
 
-      <!-- (Editor and Preview Logic kept identical) -->
+      <!-- (Editor and Preview Logic kept identical but visually refined) -->
       @if (showEditor()) {
-        <div class="absolute inset-0 z-50 bg-[#1E1F20] flex flex-col p-6 animate-in fade-in zoom-in-95 duration-200">
+        <div class="absolute inset-0 z-50 bg-[#121212] flex flex-col p-8 animate-in fade-in zoom-in-95 duration-200">
            <div class="flex items-center justify-between mb-8">
-             <h3 class="text-[#F2F2F2] text-lg font-medium">{{ editorMode() === 'note' ? (editId() ? 'Edit Note' : 'New Note') : (editId() ? 'Edit Step' : 'New Step') }}</h3>
-             <button (click)="showEditor.set(false)" class="w-8 h-8 rounded-full bg-[#2B2930] flex items-center justify-center text-[#C4C7C5] hover:text-white transition-colors"><span class="material-symbols-outlined text-sm">close</span></button>
+             <h3 class="text-[#F2F2F2] text-sm font-bold uppercase tracking-wide">{{ editorMode() === 'note' ? (editId() ? 'Edit Note' : 'New Note') : (editId() ? 'Edit Step' : 'New Step') }}</h3>
+             <button (click)="showEditor.set(false)" class="w-9 h-9 rounded-full hover:bg-[#2B2930] flex items-center justify-center text-[#8E918F] hover:text-white transition-colors"><span class="material-symbols-outlined text-xl">close</span></button>
            </div>
-           <div class="flex-1 flex flex-col space-y-4">
-             <input [(ngModel)]="editTitle" [placeholder]="editorMode() === 'note' ? 'Title...' : 'Step...'" class="w-full bg-[#2B2930] border-none rounded-2xl px-5 py-4 text-[#E3E3E3] placeholder-[#5E5E5E] focus:outline-none focus:ring-2 focus:ring-[#D0BCFF] text-lg font-medium">
-             <textarea [(ngModel)]="editContent" [placeholder]="editorMode() === 'note' ? 'Start writing...' : 'Add details...'" class="flex-1 w-full bg-[#2B2930] border-none rounded-2xl px-5 py-4 text-[#E3E3E3] placeholder-[#5E5E5E] focus:outline-none focus:ring-2 focus:ring-[#D0BCFF] resize-none text-sm leading-relaxed"></textarea>
+           <div class="flex-1 flex flex-col space-y-6">
+             <input [(ngModel)]="editTitle" [placeholder]="editorMode() === 'note' ? 'Title...' : 'Step...'" class="w-full bg-transparent border-b border-[#2B2930] px-0 py-3 text-[#E3E3E3] placeholder-[#444746] focus:outline-none focus:border-[#D0BCFF] text-xl font-bold transition-colors">
+             <textarea [(ngModel)]="editContent" [placeholder]="editorMode() === 'note' ? 'Start writing...' : 'Add details...'" class="flex-1 w-full bg-transparent border-none px-0 py-2 text-[#C4C7C5] placeholder-[#444746] focus:outline-none resize-none text-base leading-7"></textarea>
            </div>
            <div class="flex justify-end pt-6">
-              <button (click)="save()" [disabled]="!editTitle() || (editorMode() === 'note' && !editContent())" class="bg-[#D0BCFF] hover:bg-[#EADDFF] disabled:opacity-50 disabled:cursor-not-allowed text-[#381E72] px-8 py-3 rounded-full text-sm font-medium transition-all shadow-md active:scale-95">Save</button>
+              <button (click)="save()" [disabled]="!editTitle() || (editorMode() === 'note' && !editContent())" class="bg-[#D0BCFF] hover:bg-[#EADDFF] disabled:opacity-50 disabled:cursor-not-allowed text-[#381E72] px-8 py-3 rounded-full text-sm font-bold transition-all shadow-lg active:scale-95">Save</button>
            </div>
         </div>
       }
@@ -375,6 +378,28 @@ export class PlanPanelComponent {
   previewLoading = signal(false);
   imageFiles = computed(() => this.flowService.files().filter(f => this.detectType(f) === 'image'));
   otherFiles = computed(() => this.flowService.files().filter(f => this.detectType(f) !== 'image'));
+
+  // Calculate minutes until first block starts
+  minutesUntilStart = computed(() => {
+     const blocks = this.flowService.routineBlocks();
+     if(blocks.length === 0) return 0;
+     
+     // Find earliest start time
+     let earliestMins = 24 * 60; 
+     blocks.forEach(b => {
+         const [h, m] = b.startTime.split(':').map(Number);
+         const total = h * 60 + m;
+         if (total < earliestMins) earliestMins = total;
+     });
+
+     const now = new Date();
+     const currentMins = now.getHours() * 60 + now.getMinutes();
+
+     if (currentMins < earliestMins) {
+         return earliestMins - currentMins;
+     }
+     return 0;
+  });
 
   constructor() {
       effect(() => {

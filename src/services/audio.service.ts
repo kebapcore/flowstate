@@ -1,4 +1,5 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
+import { FlowCloudService } from './flow-cloud.service';
 
 export interface MusicTrack {
   id: string;
@@ -12,97 +13,176 @@ export interface MusicTrack {
   providedIn: 'root'
 })
 export class AudioService {
-  readonly library: MusicTrack[] = [
-    { 
-      id: 'MUSIC_TELL', 
-      name: 'Tell Me', 
-      description: 'Kpop şarkısı, aşk ve itiraf hakkında, pembe dünya, romantizm', 
-      url: 'https://fastcdn.onrender.com/tellme',
-      mood: 'romantic'
-    },
-    { 
-      id: 'REUNITED', 
-      name: 'Reunited', 
-      description: 'Sakin, Undertale müziği. Proje başlangıçları ve ortalarında, kahve molalarında mükemmel..', 
-      url: 'https://fastcdn.onrender.com/reunited',
-      mood: 'creative'
-    },
-    {
-      id: 'MUSIC_SILENCE',
-      name: 'Silence',
-      description: 'Complete silence.',
-      url: '',
-      mood: 'calm'
-    },
-    {
-      id: 'MUSIC_FALLING',
-      name: 'Falling Down',
-      description: 'Lil Peep & XXXTENTACION. Melankolik, yağmurlu, depresif ve duygusal kırılma anları için.',
-      url: 'https://fastcdn.onrender.com/fallingdown',
-      mood: 'sad'
-    },
-    {
-      id: 'MUSIC_HOME',
-      name: 'Home',
-      description: 'Undertale OST. Ev sıcaklığı, güvenli alan, huzur ve nostalji. Toriel sizi karşılıyor gibi.',
-      url: 'https://cs1.mp3.pm/listen/127837738/bktHOWpISU9aS1RVZWVDSmtObmtRZzBPaHcvdkpuRUJhOVdKOHVOYjgxbU9NaXdDWnFxSG9QRUcyWVZKenZJMDJHMkFkRGZlNk5wS0xmK2JoWjJJMng0SmRmWFA5bFJvTXBrYlhIaUM4Ynd0YnRYUitzYWNRMk1xZzNSQ1FoU3g/Undertale_-_Home_(mp3.pm).mp3',
-      mood: 'cozy'
-    },
-    {
-      id: 'MUSIC_MOOG',
-      name: 'Moog City',
-      description: 'C418 (Minecraft). İnşa etme, dünyayı yaratma, bloklar ve saf yaratıcılık akışı.',
-      url: 'https://cs1.mp3.pm/listen/171229068/bktHOWpISU9aS1RVZWVDSmtObmtRZzBPaHcvdkpuRUJhOVdKOHVOYjgxbW90ejI4ZXhIK0pQSWtUWjdGRUgwYnhvSXMzSWFvc3QvUURjNGF6dnFoN0doK2RTM2lFY2d1RVFVSDRHdlpVSk53MEtQV1hEbEcyMmlxV2hsWlVOTFo/C418Muzyka_s_MAJNKRAFTA_-_Moog_City_Minecraft_OST_(mp3.pm).mp3',
-      mood: 'creative'
-    },
-    {
-      id: 'MUSIC_LFY',
-      name: 'Love For You',
-      description: 'Aşk, kelebekler, olumlu duygular. Tatlı, sweet....',
-      url: 'https://cs1.mp3.pm/listen/243420564/bktHOWpISU9aS1RVZWVDSmtObmtRZzBPaHcvdkpuRUJhOVdKOHVOYjgxbkU3OTU1VDRLZzJmN1c4UllhVTdLZlBDNS9lYTlFdWNxcHVjUE9iOWtBdlZuYlZ2OHl5dXppMHF0TENzQmF0T3lVNVFvbmZDMzY3aFFRdzFoUmszMWI/loveli_lori_-_love_for_you_(mp3.pm).mp3',
-      mood: 'cute'
-    }
-  ];
+  private flowCloud = inject(FlowCloudService);
+  
+  // Library is now dynamic and reactive
+  library = signal<MusicTrack[]>([]);
 
   private audio = new Audio();
   
-  // State
-  currentTrackId = signal<string>('MUSIC_SILENCE');
+  // State - Defaulting to MOOG (Main) instead of SILENCE
+  currentTrackId = signal<string>('main');
   isPlaying = signal(false);
   volume = signal(0.3);
 
+  // Queue State
+  queue = signal<string[]>([]);
+  queueIndex = signal(0);
+
   // Derived
-  currentTrack = computed(() => this.library.find(t => t.id === this.currentTrackId()) || this.library[2]);
+  currentTrack = computed(() => this.library().find(t => t.id === this.currentTrackId()) || this.library()[0]);
 
   constructor() {
-    this.audio.loop = true;
     this.audio.volume = this.volume();
+    this.audio.crossOrigin = "anonymous";
+    this.audio.loop = true; // Default loop
+    
+    // Auto-advance mechanism for playlists
+    this.audio.onended = () => {
+        this.playNext();
+    };
+
+    // Robust error handling
+    this.audio.onerror = (e) => {
+        console.warn("Audio Playback Failed:", this.audio.error);
+        this.isPlaying.set(false);
+    };
   }
 
-  playTrackById(id: string) {
-    if (id === this.currentTrackId() && this.isPlaying()) return; 
+  // Called by FlowStateService after fetching from Cloud
+  setLibrary(tracks: MusicTrack[]) {
+      this.library.set(tracks);
+  }
 
-    const track = this.library.find(t => t.id === id);
+  /**
+   * Browser Autoplay Unlocker
+   * Call this on first user interaction (click/keydown)
+   */
+  async tryUnlockAudio() {
+      if (this.audio.paused && this.currentTrackId() !== 'MUSIC_SILENCE') {
+          this.safePlay();
+      }
+  }
+
+  async playTrackById(id: string) {
+    if (id === 'MUSIC_SILENCE') {
+        this.stop();
+        this.currentTrackId.set(id);
+        return;
+    }
+
+    const track = this.library().find(t => t.id === id);
     if (!track) {
+      // If requested track not found (e.g. before library load), just set ID
+      // It will play when library loads if we call this again, or we wait.
       console.warn(`Track ID ${id} not found.`);
       return;
+    }
+    
+    // Single track play replaces queue
+    this.queue.set([id]);
+    this.queueIndex.set(0);
+
+    // If we are already playing this track, ensure it's playing, otherwise restart
+    if (id === this.currentTrackId() && this.isPlaying()) {
+        return; 
     }
 
     this.currentTrackId.set(id);
 
-    if (id === 'MUSIC_SILENCE') {
-      this.stop();
-      return;
+    // SECURE URL RESOLUTION
+    let finalUrl = track.url;
+    if (finalUrl.startsWith('cloud://')) {
+        const filename = finalUrl.replace('cloud://', '');
+        try {
+            // Fetch as blob with signed headers
+            finalUrl = await this.flowCloud.fetchFileUrl(filename);
+        } catch (e) {
+            console.error("Failed to resolve secure audio URL", e);
+            this.isPlaying.set(false);
+            return;
+        }
     }
 
-    this.audio.src = track.url;
+    // Set source and force play (Auto-play logic)
+    this.audio.src = finalUrl;
     this.audio.load();
+    this.audio.loop = true; // Single track loops by default
     this.safePlay();
+  }
+
+  playPlaylist(ids: string[]) {
+      if (!ids || ids.length === 0) {
+          this.stop();
+          return;
+      }
+      
+      this.queue.set(ids);
+      this.queueIndex.set(0);
+      this._playQueueAtIndex(0);
+  }
+
+  playNext() {
+      this._playQueueAtIndex(this.queueIndex() + 1);
+  }
+  
+  private async _playQueueAtIndex(index: number) {
+      const q = this.queue();
+      
+      // Loop Playlist logic
+      if (index >= q.length) {
+          if (q.length > 0) {
+              this.queueIndex.set(0);
+              this._playQueueAtIndex(0);
+          } else {
+              this.stop();
+          }
+          return;
+      }
+
+      const id = q[index];
+      this.queueIndex.set(index);
+
+      if (id === 'MUSIC_SILENCE') {
+          this.currentTrackId.set(id);
+          this.stop(); 
+          return;
+      }
+
+      const track = this.library().find(t => t.id === id);
+      if (!track) {
+          this.playNext();
+          return;
+      }
+
+      this.currentTrackId.set(id);
+
+      // SECURE URL RESOLUTION (QUEUE)
+      let finalUrl = track.url;
+      if (finalUrl.startsWith('cloud://')) {
+          const filename = finalUrl.replace('cloud://', '');
+          try {
+              finalUrl = await this.flowCloud.fetchFileUrl(filename);
+          } catch (e) {
+              console.error("Queue: Failed to resolve secure audio URL, skipping", e);
+              this.playNext();
+              return;
+          }
+      }
+
+      this.audio.src = finalUrl;
+      this.audio.load();
+      
+      this.audio.loop = (q.length === 1);
+      this.safePlay();
   }
 
   togglePlay() {
     if (this.currentTrackId() === 'MUSIC_SILENCE') {
-      this.playTrackById('REUNITED'); 
+      const firstTrack = this.library().find(t => t.id !== 'MUSIC_SILENCE');
+      if (firstTrack) {
+          this.playTrackById(firstTrack.id);
+      }
       return;
     }
 
@@ -122,7 +202,6 @@ export class AudioService {
               this.isPlaying.set(true);
           }
       } catch (error: any) {
-          // Ignore interruption errors which happen if play/pause are toggled rapidly
           if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
               console.error("Audio Playback Error:", error);
           }

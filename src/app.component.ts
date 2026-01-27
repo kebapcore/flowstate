@@ -1,9 +1,10 @@
-import { Component, signal, inject, effect } from '@angular/core';
+import { Component, signal, inject, effect, ViewChild, ElementRef, AfterViewInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ChatComponent } from './components/chat.component';
 import { SidebarComponent } from './components/sidebar.component';
 import { PlanPanelComponent } from './components/plan-panel.component';
 import { FlowStateService } from './services/flow-state.service';
+import { AudioService } from './services/audio.service';
 import { DevPanelComponent } from './components/dev-panel.component';
 import { SettingsModalComponent } from './components/settings-modal.component';
 
@@ -15,6 +16,7 @@ import { SettingsModalComponent } from './components/settings-modal.component';
     <div class="relative h-screen w-screen overflow-hidden bg-[#131314] text-[#E3E3E3] font-sans"
          (mousemove)="onMouseMove($event)" 
          (mouseup)="onMouseUp()"
+         (click)="onGlobalClick()"
     >
       
       <!-- GLOBAL WALLPAPER LAYER -->
@@ -23,6 +25,11 @@ import { SettingsModalComponent } from './components/settings-modal.component';
            <img [src]="flowService.wallpaper()" class="w-full h-full object-cover opacity-60">
            <div class="absolute inset-0 bg-black/40"></div>
         </div>
+      }
+
+      <!-- ASH PARTICLES (Landing Mode Only) -->
+      @if (flowService.appMode() === 'landing') {
+          <canvas #ashCanvas class="absolute inset-0 z-[1] pointer-events-none opacity-50"></canvas>
       }
 
       <!-- ZERO UI LANDING OVERLAY (Hero Section) -->
@@ -92,13 +99,24 @@ import { SettingsModalComponent } from './components/settings-modal.component';
              </button>
           } 
 
-          <!-- Open Left Sidebar Button (If Closed) -->
+          <!-- Open Left Sidebar Button (If Closed but NOT Zen) -->
           @if (!flowService.leftSidebarOpen() && !flowService.zenMode() && flowService.appMode() !== 'landing') {
               <button 
                (click)="flowService.toggleLeftSidebar()"
                class="absolute top-6 left-6 z-40 w-10 h-10 bg-[#2B2930] hover:bg-[#322F35] text-[#C4C7C5] rounded-full shadow-lg transition-all flex items-center justify-center animate-in fade-in zoom-in"
              >
                <span class="material-symbols-outlined">last_page</span>
+             </button>
+          }
+
+          <!-- EMERGENCY ZEN EXIT BUTTON (Only visible in Zen Mode) -->
+          @if (flowService.zenMode()) {
+            <button 
+               (click)="flowService.toggleZenMode()"
+               class="absolute bottom-6 left-6 z-50 pl-3 pr-4 py-3 bg-[#1E1F20] hover:bg-[#2B2930] border border-white/10 text-[#C4C7C5] hover:text-white rounded-full shadow-2xl transition-all flex items-center justify-center gap-2 animate-in fade-in zoom-in group"
+             >
+               <span class="material-symbols-outlined text-[20px] group-hover:-rotate-90 transition-transform">dock_to_right</span>
+               <span class="text-xs font-bold uppercase tracking-wider">Exit Zen</span>
              </button>
           }
         </div>
@@ -144,57 +162,171 @@ import { SettingsModalComponent } from './components/settings-modal.component';
     </div>
   `
 })
-export class AppComponent {
+export class AppComponent implements AfterViewInit {
   flowService = inject(FlowStateService);
+  audioService = inject(AudioService);
+  
   showMobileSidebar = signal(false);
   isResizing = false;
 
-  constructor() {
-    // Initialize FlowCloud (once per session)
-    this.initFlowCloud();
+  @ViewChild('ashCanvas') ashCanvas!: ElementRef<HTMLCanvasElement>;
+  private particles: any[] = [];
+  private animationFrameId: any;
 
+  constructor() {
     // Force Landing State on Init if no data
     if (this.flowService.planSteps().length === 0 && this.flowService.notes().length === 0) {
-      this.flowService.appMode.set('landing');
-      this.flowService.leftSidebarOpen.set(false);
-      this.flowService.rightPanelOpen.set(false);
+        this.flowService.appMode.set('landing');
+        this.flowService.leftSidebarOpen.set(false);
+        this.flowService.rightPanelOpen.set(false);
     } else {
-      // Restore project state if data exists
-      this.flowService.appMode.set('project'); // Default fallback
-      this.flowService.leftSidebarOpen.set(true);
-      this.flowService.rightPanelOpen.set(true);
+        // Restore project state if data exists
+        this.flowService.appMode.set('project'); // Default fallback
+        this.flowService.leftSidebarOpen.set(true);
+        this.flowService.rightPanelOpen.set(true);
     }
+
+    // React to app mode changes to start/stop particles
+    effect(() => {
+        if (this.flowService.appMode() === 'landing') {
+            setTimeout(() => this.initParticles(), 100);
+        } else {
+            this.stopParticles();
+        }
+    });
   }
 
-  private async initFlowCloud() {
-    const accessKey = (process.env as any)['SYSTEM_ACCESS_KEY'] || '';
-    if (accessKey) {
-      await this.flowService.initFlowCloud(accessKey);
-    } else {
-      console.warn('⚠️ SYSTEM_ACCESS_KEY not found, FlowCloud disabled');
-    }
+  @HostListener('window:keydown', ['$event'])
+  handleKeyDown(event: KeyboardEvent) {
+      // Toggle Dev Panel on Ctrl + Shift + D
+      if (event.ctrlKey && event.shiftKey && (event.key === 'd' || event.key === 'D')) {
+          event.preventDefault();
+          this.flowService.toggleDevPanel();
+      }
   }
 
   isMobile() { return window.innerWidth < 768; }
 
+  // --- AUDIO UNLOCKER ---
+  onGlobalClick() {
+      // First user interaction unlocks audio context
+      this.audioService.tryUnlockAudio();
+  }
+
+  // --- PARTICLES SYSTEM ---
+
+  ngAfterViewInit() {
+      if(this.flowService.appMode() === 'landing') {
+          this.initParticles();
+      }
+  }
+
+  initParticles() {
+      if (!this.ashCanvas) return;
+      const canvas = this.ashCanvas.nativeElement;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      // Create particles
+      this.particles = [];
+      const count = 60; // Moderate amount
+      for (let i = 0; i < count; i++) {
+          this.particles.push(this.createParticle(canvas.width, canvas.height));
+      }
+
+      this.animateParticles();
+  }
+
+  createParticle(w: number, h: number) {
+      // Spawn mostly on sides
+      const side = Math.random() > 0.5 ? 'left' : 'right';
+      const x = side === 'left' ? Math.random() * (w * 0.2) : w - Math.random() * (w * 0.2);
+      
+      return {
+          x: x,
+          y: Math.random() * h,
+          size: Math.random() * 2 + 0.5,
+          speedX: (Math.random() - 0.5) * 0.5, // Slow drift
+          speedY: (Math.random() - 0.5) * 0.5,
+          opacity: Math.random() * 0.5 + 0.1
+      };
+  }
+
+  stopParticles() {
+      if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+  }
+
+  animateParticles() {
+      if (!this.ashCanvas) return;
+      const canvas = this.ashCanvas.nativeElement;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Chat Box Exclusion Zone (Approximate center)
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const safeW = 750; // Chat box width + margin
+      const safeH = 200; // Chat box height area + margin
+      const safeLeft = centerX - safeW / 2;
+      const safeRight = centerX + safeW / 2;
+      const safeTop = centerY - safeH / 2;
+      const safeBottom = centerY + safeH / 2;
+
+      this.particles.forEach(p => {
+          p.x += p.speedX;
+          p.y += p.speedY;
+
+          // Wrap around edges
+          if (p.x < 0) p.x = canvas.width;
+          if (p.x > canvas.width) p.x = 0;
+          if (p.y < 0) p.y = canvas.height;
+          if (p.y > canvas.height) p.y = 0;
+
+          // COLLISION AVOIDANCE with Center Box
+          if (p.x > safeLeft && p.x < safeRight && p.y > safeTop && p.y < safeBottom) {
+               // Push away towards nearest edge
+               const distLeft = Math.abs(p.x - safeLeft);
+               const distRight = Math.abs(p.x - safeRight);
+               
+               if (distLeft < distRight) {
+                   p.x -= 1; // Push left
+               } else {
+                   p.x += 1; // Push right
+               }
+          }
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(200, 200, 200, ${p.opacity})`;
+          ctx.fill();
+      });
+
+      this.animationFrameId = requestAnimationFrame(() => this.animateParticles());
+  }
+
   startResizing(event: MouseEvent) {
-    this.isResizing = true;
-    event.preventDefault();
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
+      this.isResizing = true;
+      event.preventDefault();
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
   }
 
   onMouseMove(event: MouseEvent) {
-    if (!this.isResizing) return;
-    const newWidth = window.innerWidth - event.clientX - 12;
-    this.flowService.setRightPanelWidth(newWidth);
+      if (!this.isResizing) return;
+      const newWidth = window.innerWidth - event.clientX - 12;
+      this.flowService.setRightPanelWidth(newWidth);
   }
 
   onMouseUp() {
-    if (this.isResizing) {
-      this.isResizing = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    }
+      if (this.isResizing) {
+          this.isResizing = false;
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+      }
   }
 }
