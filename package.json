@@ -1,5 +1,5 @@
 {
-  "name": "flowstate-backup-2.5",
+  "name": "copy-of-flowstate-backup",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "rxjs": "^7.8.2",
-    "@google/genai": "^1.37.0",
+    "@google/genai": "latest",
     "@angular/forms": "^21.1.0",
     "@angular/common": "^21.1.0",
     "@angular/platform-browser": "^21.1.0",
@@ -18,7 +18,7 @@
     "@angular/core": "^21.1.0",
     "marked": "12.0.0",
     "html-to-image": "1.11.11",
-    "@supabase/supabase-js": "^2.93.1",
+    "@webcontainer/api": "1.1.8",
     "@angular/build": "^21.1.0",
     "@angular/cli": "^21.1.0",
     "@angular/compiler-cli": "^21.1.0",
@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
-    "typescript": "~5.9.3",
+    "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
 }

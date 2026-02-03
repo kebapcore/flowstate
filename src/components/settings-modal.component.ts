@@ -1,8 +1,8 @@
+
 import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FlowStateService, ThemeType, ModuleState } from '../services/flow-state.service';
-import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-settings-modal',
@@ -62,45 +62,6 @@ import { AuthService } from '../services/auth.service';
           <!-- PERSONA TAB -->
           @if (activeTab() === 'persona') {
             <div class="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                
-                <!-- Cloud Sync Status -->
-                <div class="p-4 bg-[#131314] rounded-xl border border-[#444746] flex items-center justify-between">
-                    @if (authService.user()) {
-                        <div class="flex items-center gap-3">
-                            <img [src]="authService.profile()?.avatar_url" class="w-8 h-8 rounded-full border border-white/10">
-                            <div>
-                                <div class="text-xs font-bold text-[#E3E3E3]">{{ authService.profile()?.full_name }}</div>
-                                <div class="text-[10px] text-green-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> Cloud Sync Active</div>
-                            </div>
-                        </div>
-                        <button (click)="authService.signOut()" class="text-xs text-[#8E918F] hover:text-white underline">Sign Out</button>
-                    } @else {
-                        <div>
-                            <div class="text-xs font-bold text-[#E3E3E3] mb-1">Cloud Sync Disabled</div>
-                            <div class="text-[10px] text-[#8E918F]">Login to save notes & routines to the cloud.</div>
-                        </div>
-                        <button (click)="authService.signInWithGoogle()" class="px-3 py-1.5 bg-white text-black text-xs font-bold rounded-lg hover:bg-gray-200">Login with Google</button>
-                    }
-                </div>
-
-                <div class="h-px bg-[#444746]/50 my-2"></div>
-                
-                <!-- API KEY INPUT (CRITICAL FOR LOCAL USE) -->
-                <div>
-                    <div class="text-xs font-bold text-[#C4C7C5] uppercase tracking-wider mb-2">Gemini API Key</div>
-                    <div class="relative">
-                        <input 
-                            type="password"
-                            [(ngModel)]="tempKey"
-                            placeholder="sk-..."
-                            class="w-full bg-[#131314] border border-[#444746] rounded-xl px-4 py-3 text-sm text-[#E3E3E3] focus:outline-none focus:border-[#D0BCFF] focus:ring-1 focus:ring-[#D0BCFF] transition-all font-mono"
-                        >
-                        <p class="text-[10px] text-[#5E5E5E] mt-1">Saved locally on your device. Never synced.</p>
-                    </div>
-                </div>
-
-                <div class="h-px bg-[#444746]/50 my-2"></div>
-
                 <p class="text-xs text-[#C4C7C5]">Shape your thinking partner.</p>
 
                 <!-- NEW MODEL SELECTOR -->
@@ -128,6 +89,19 @@ import { AuthService } from '../services/auth.service';
                     <button (click)="setPreset('pro')" class="px-4 py-2 rounded-xl bg-[#2B2930] hover:bg-[#D0BCFF] hover:text-[#381E72] text-xs font-medium text-[#C4C7C5] transition-colors whitespace-nowrap">Professional</button>
                     <button (click)="setPreset('steve')" class="px-4 py-2 rounded-xl bg-[#2B2930] hover:bg-[#D0BCFF] hover:text-[#381E72] text-xs font-medium text-[#C4C7C5] transition-colors whitespace-nowrap">Visionary</button>
                 </div>
+
+                <div class="space-y-2">
+                    <div class="text-xs font-bold text-[#C4C7C5] uppercase tracking-wider mb-2">Google Gemini API Key</div>
+                    <input 
+                        type="password"
+                        [(ngModel)]="tempApiKey"
+                        class="w-full bg-[#131314] border border-[#444746] rounded-xl px-4 py-3 text-sm text-[#E3E3E3] placeholder-[#5E5E5E] focus:outline-none focus:border-[#D0BCFF] focus:ring-1 focus:ring-[#D0BCFF] transition-all"
+                        placeholder="AIzaSy..."
+                    >
+                    <p class="text-[10px] text-[#8E918F]">Key is stored in your browser's LocalStorage. Never sent to our servers.</p>
+                </div>
+
+                <div class="h-px bg-[#444746]/50 my-4"></div>
 
                 <div class="space-y-2">
                     <textarea 
@@ -196,10 +170,33 @@ import { AuthService } from '../services/auth.service';
                     <p class="text-[10px] text-[#8E918F] mt-2">Set a URL to enable glassmorphism mode.</p>
                 </div>
 
+                <!-- EXTRA GLASS TOGGLE -->
+                <div class="flex items-center justify-between p-4 bg-[#2B2930] rounded-2xl border border-[#444746]">
+                     <div>
+                          <div class="flex items-center gap-2 mb-1">
+                             <span class="text-sm font-medium text-[#E3E3E3]">Extra Glass UI</span>
+                             <span class="px-1.5 py-0.5 rounded bg-purple-900/40 text-purple-200 text-[9px] font-bold tracking-wider">BETA</span>
+                          </div>
+                          <div class="text-[10px] text-[#C4C7C5]">Heavy blur, liquid motion, zero solid colors.</div>
+                     </div>
+                     <button 
+                        (click)="tempExtraGlass = !tempExtraGlass" 
+                        class="relative w-12 h-6 rounded-full transition-colors duration-200 ease-in-out"
+                        [class.bg-[#D0BCFF]]="tempExtraGlass"
+                        [class.bg-[#444746]]="!tempExtraGlass"
+                     >
+                         <div 
+                            class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out"
+                            [class.translate-x-6]="tempExtraGlass"
+                            [class.translate-x-0]="!tempExtraGlass"
+                         ></div>
+                     </button>
+                </div>
+
             </div>
           }
 
-          <!-- MODULES TAB -->
+          <!-- MODULES TAB (New) -->
           @if (activeTab() === 'modules') {
              <div class="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                 <p class="text-xs text-[#C4C7C5]">Toggle features to customize your experience and save AI tokens.</p>
@@ -215,6 +212,20 @@ import { AuthService } from '../services/auth.service';
                           <div class="text-[10px] text-[#C4C7C5]">Notes, Planning, and Basic Persona.</div>
                        </div>
                        <span class="material-symbols-outlined text-[#D0BCFF] opacity-50">toggle_on</span>
+                   </div>
+
+                   <!-- IDE / CODING (New) -->
+                   <div class="flex items-center justify-between p-4 bg-[#2B2930] rounded-2xl border border-[#444746]">
+                       <div>
+                          <div class="flex items-center gap-2 mb-1">
+                             <span class="text-sm font-medium text-[#E3E3E3]">IDE & Coding Engine</span>
+                             <span class="px-1.5 py-0.5 rounded bg-amber-900/40 text-amber-200 text-[9px] font-bold tracking-wider">HEAVY</span>
+                          </div>
+                          <div class="text-[10px] text-[#C4C7C5]">WebContainers, Terminal, Preview, Code Generation.</div>
+                       </div>
+                       <button (click)="toggleModule('ide', !flowService.activeModules().ide)" class="text-[#D0BCFF] hover:text-[#EADDFF] transition-colors">
+                           <span class="material-symbols-outlined text-[32px]">{{ flowService.activeModules().ide ? 'toggle_on' : 'toggle_off' }}</span>
+                       </button>
                    </div>
 
                    <!-- FILES SYSTEM -->
@@ -241,20 +252,6 @@ import { AuthService } from '../services/auth.service';
                            <span class="material-symbols-outlined text-[32px]">{{ flowService.activeModules().routine ? 'toggle_on' : 'toggle_off' }}</span>
                        </button>
                    </div>
-
-                   <!-- LIVE CALL (Canary) -->
-                   <div class="flex items-center justify-between p-4 bg-[#2B2930] rounded-2xl border border-[#444746]">
-                       <div>
-                          <div class="flex items-center gap-2 mb-1">
-                             <span class="text-sm font-medium text-[#E3E3E3]">Live Call</span>
-                             <span class="px-1.5 py-0.5 rounded bg-yellow-900/40 text-yellow-200 text-[9px] font-bold tracking-wider uppercase">Canary</span>
-                          </div>
-                          <div class="text-[10px] text-[#C4C7C5]">Voice interaction with Gemini Live.</div>
-                       </div>
-                       <button (click)="toggleModule('liveCall', !flowService.activeModules().liveCall)" class="text-[#D0BCFF] hover:text-[#EADDFF] transition-colors">
-                           <span class="material-symbols-outlined text-[32px]">{{ flowService.activeModules().liveCall ? 'toggle_on' : 'toggle_off' }}</span>
-                       </button>
-                   </div>
                 </div>
              </div>
           }
@@ -275,27 +272,28 @@ import { AuthService } from '../services/auth.service';
 })
 export class SettingsModalComponent {
   flowService = inject(FlowStateService);
-  authService = inject(AuthService);
   activeTab = signal<'persona' | 'appearance' | 'modules'>('persona');
-  
+
   // Temp State
+  tempApiKey = '';
   tempPersona = '';
   tempTheme: ThemeType = 'material';
   tempWallpaper = '';
-  tempModel = '';
-  tempKey = '';
+  tempModel = 'gemini-2.5-pro';
+  tempExtraGlass = false;
 
   constructor() {
     effect(() => {
-        // Init temp state when opened
-        if (this.flowService.showSettings()) {
-            this.tempPersona = this.flowService.userPersona();
-            this.tempTheme = this.flowService.theme();
-            this.tempWallpaper = this.flowService.wallpaper() || '';
-            this.tempModel = this.flowService.selectedModel();
-            this.tempKey = this.flowService.apiKey();
-            this.activeTab.set('persona');
-        }
+      // Init temp state when opened
+      if (this.flowService.showSettings()) {
+        this.tempApiKey = this.flowService.apiKey();
+        this.tempPersona = this.flowService.userPersona();
+        this.tempTheme = this.flowService.theme();
+        this.tempWallpaper = this.flowService.wallpaper() || '';
+        this.tempModel = this.flowService.selectedModel();
+        this.tempExtraGlass = this.flowService.extraGlassMode();
+        this.activeTab.set('persona');
+      }
     });
   }
 
@@ -304,25 +302,21 @@ export class SettingsModalComponent {
   }
 
   saveSettings() {
+    this.flowService.updateApiKey(this.tempApiKey);
     this.flowService.updatePersona(this.tempPersona);
     this.flowService.setTheme(this.tempTheme);
     this.flowService.setWallpaper(this.tempWallpaper.trim() || null);
     this.flowService.setModel(this.tempModel);
-    
-    // Save Key
-    if (this.tempKey !== this.flowService.apiKey()) {
-        this.flowService.updateApiKey(this.tempKey);
-    }
-
+    this.flowService.setGlassMode(this.tempExtraGlass);
     this.close();
   }
 
   toggleModule(key: keyof ModuleState, value: boolean) {
-      this.flowService.updateModule(key, value);
+    this.flowService.updateModule(key, value);
   }
 
   setPreset(type: 'buddy' | 'pro' | 'steve') {
-    switch(type) {
+    switch (type) {
       case 'buddy':
         this.tempPersona = "You are a friendly, energetic, and supportive creative partner. Act like a close friend ('kanka'). Be casual, avoid stiffness/corporate talk, and focus on keeping the momentum going. Use emojis occasionally.";
         break;

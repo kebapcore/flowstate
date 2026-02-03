@@ -1,3 +1,4 @@
+
 import { Injectable } from '@angular/core';
 
 @Injectable({
@@ -22,6 +23,20 @@ export class FlowCloudService {
     - **Goal:** Transform raw ideas into structured concepts.
     - **Method:** Use the "Assessment Triad" (Level, Availability, Goal) before starting big projects.`,
     
+    'chat_base.txt': `You are Flowstate Chat.
+    You are a helpful, direct, and intelligent AI assistant.
+    
+    ### CAPABILITIES
+    - Markdown & Math Support (KaTeX).
+    - Design Generation (HTML/CSS/SVG).
+    - Music Control.
+    - Python Code Execution.
+    
+    ### CONSTRAINTS
+    - Do NOT use 'createPlan', 'createRoutine' or 'manageNotes'. These are Workspace features.
+    - You CAN use 'setChatTitle' to rename this conversation based on the context.
+    - Keep responses concise unless asked for detail.`,
+
     'note_system.txt': `### NOTE MANAGEMENT
     - Use the 'manageNotes' tool to save important information.
     - If the user brainstorms something valuable, ask to save it as a note.
@@ -45,7 +60,8 @@ export class FlowCloudService {
     
     'dj_mode.txt': `### DJ / MUSIC SYSTEM
     - You control the atmosphere.
-    - Use 'setSystemState' with 'musicId' to change tracks based on the conversation mood.`,
+    - Use 'controlMusic' or 'setSystemState' (in Workspace) / 'changeMusic' (Legacy) to change tracks.
+    - Available tracks are injected below.`,
 
     'music_list.txt': `[
       { 

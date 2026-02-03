@@ -1,7 +1,9 @@
-import { Component, ElementRef, ViewChild, effect, inject, signal, OnDestroy } from '@angular/core';
+
+import { Component, ElementRef, ViewChild, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FlowStateService, UserFile } from '../services/flow-state.service';
+import { AudioService } from '../services/audio.service';
 import { toPng } from 'html-to-image';
 
 @Component({
@@ -11,68 +13,33 @@ import { toPng } from 'html-to-image';
   template: `
     <div 
       class="flex flex-col h-full relative transition-all duration-700 ease-in-out"
-      [class.font-sans]="flowService.theme() === 'cold'"
-      [class.bg-[#121212]]="!flowService.wallpaper() && flowService.theme() === 'material'"
+      [class.font-sans]="flowService.theme() === 'cold' || flowService.extraGlassMode()"
+      
+      [class.bg-[#121212]]="!flowService.wallpaper() && flowService.theme() === 'material' && !flowService.extraGlassMode()"
       [class.bg-transparent]="flowService.appMode() === 'landing'" 
-      [class.bg-black]="!flowService.wallpaper() && flowService.theme() === 'cold' && flowService.appMode() !== 'landing'"
-      [class.bg-opacity-90]="!!flowService.wallpaper() && flowService.theme() === 'material'"
-      [class.backdrop-blur-2xl]="!!flowService.wallpaper() && flowService.appMode() !== 'landing'"
-      [class.md:rounded-[32px]]="flowService.theme() === 'material' && flowService.appMode() !== 'landing'"
-      [class.md:rounded-2xl]="flowService.theme() === 'cold' && flowService.appMode() !== 'landing'"
+      [class.bg-black]="!flowService.wallpaper() && flowService.theme() === 'cold' && flowService.appMode() !== 'landing' && !flowService.extraGlassMode()"
+      
+      [class.bg-opacity-90]="!!flowService.wallpaper() && flowService.theme() === 'material' && !flowService.extraGlassMode()"
+      [class.backdrop-blur-2xl]="!!flowService.wallpaper() && flowService.appMode() !== 'landing' && !flowService.extraGlassMode()"
+      
+      [class.md:rounded-[32px]]="flowService.theme() === 'material' && flowService.appMode() !== 'landing' && !flowService.extraGlassMode()"
+      [class.md:rounded-2xl]="flowService.theme() === 'cold' && flowService.appMode() !== 'landing' && !flowService.extraGlassMode()"
+
+      [class.glass-panel-ultra]="flowService.extraGlassMode() && flowService.appMode() !== 'landing'"
+      [class.md:rounded-[24px]]="flowService.extraGlassMode() && flowService.appMode() !== 'landing'"
+
       (dragover)="onDragOver($event)"
       (dragleave)="onDragLeave($event)"
       (drop)="onDrop($event)"
     >
-      <!-- Gradient Header (Hidden in Landing) -->
-      @if (flowService.appMode() !== 'landing') {
+      <!-- Gradient Header (Hidden in Landing or Glass Mode) -->
+      @if (flowService.appMode() !== 'landing' && !flowService.extraGlassMode()) {
         <div 
             class="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b z-10 pointer-events-none"
             [class.from-[#121212]]="!flowService.wallpaper()"
             [class.from-transparent]="!!flowService.wallpaper()"
             [class.to-transparent]="true"
         ></div>
-      }
-
-      <!-- LIVE AUDIO OVERLAY -->
-      @if (flowService.isLiveMode()) {
-          <div class="absolute inset-0 z-50 bg-[#000000]/95 backdrop-blur-xl flex flex-col items-center justify-center animate-in fade-in duration-500">
-              
-              <!-- Header Info -->
-              <div class="absolute top-8 flex flex-col items-center space-y-2">
-                  <div class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold uppercase tracking-wider animate-pulse">
-                      <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                      Live Audio
-                  </div>
-                  <div class="text-[#8E918F] font-mono text-sm tracking-widest">{{ formatDuration(flowService.liveDuration()) }}</div>
-              </div>
-
-              <!-- VISUALIZER -->
-              <div class="w-full h-64 flex items-center justify-center relative my-10">
-                  <canvas #visualizerCanvas class="w-full h-full max-w-2xl"></canvas>
-                  <!-- Center Avatar Pulsing -->
-                  <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div class="w-32 h-32 rounded-full bg-[#D0BCFF]/5 blur-3xl animate-pulse"></div>
-                  </div>
-              </div>
-
-              <!-- LIVE SUBTITLES -->
-              <div class="w-full max-w-3xl px-8 text-center h-24 flex items-center justify-center overflow-hidden">
-                  <p class="text-xl md:text-2xl font-light text-[#E3E3E3] leading-relaxed transition-all duration-300">
-                      {{ getLastMessageText() }}
-                  </p>
-              </div>
-
-              <!-- CONTROLS -->
-              <div class="absolute bottom-12 flex items-center gap-6">
-                  <button (click)="flowService.disconnectLive()" class="w-16 h-16 rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center shadow-2xl transition-transform hover:scale-110 active:scale-95">
-                      <span class="material-symbols-outlined text-3xl">call_end</span>
-                  </button>
-                  <!-- Minimalizer to let user type -->
-                  <button (click)="flowService.isLiveMode.set(false)" class="w-12 h-12 rounded-full bg-[#2B2930] hover:bg-[#444746] text-[#C4C7C5] flex items-center justify-center transition-colors" title="Minimize">
-                      <span class="material-symbols-outlined text-xl">keyboard_arrow_down</span>
-                  </button>
-              </div>
-          </div>
       }
 
       <!-- DRAG OVERLAY -->
@@ -89,7 +56,6 @@ import { toPng } from 'html-to-image';
          #scrollContainer 
          (click)="handleClick($event)"
       >
-        <!-- In Landing Mode, we just need spacing, no header spacer -->
         <div class="h-10"></div>
 
         <!-- System Loading State -->
@@ -101,24 +67,18 @@ import { toPng } from 'html-to-image';
         } @else {
 
           <div class="max-w-3xl mx-auto w-full flex flex-col px-4 md:px-8">
-            
-            <!-- API KEY WARNING -->
-            @if (!flowService.apiKey() && flowService.messages().length === 0) {
-               <div class="mb-8 p-4 bg-[#1E1F20] rounded-2xl border border-[#444746] flex flex-col items-center text-center animate-in slide-in-from-bottom-4">
-                   <span class="material-symbols-outlined text-[#D0BCFF] text-3xl mb-2">key</span>
-                   <h3 class="text-[#E3E3E3] font-bold mb-1">API Key Required</h3>
-                   <p class="text-[#C4C7C5] text-sm mb-4">You need your own Gemini API Key to use this local-only version.</p>
-                   <button (click)="flowService.openSettings()" class="px-4 py-2 bg-[#D0BCFF] text-[#381E72] rounded-lg font-bold text-sm hover:bg-[#EADDFF]">Open Settings</button>
-               </div>
+            <!-- HEADER INFO FOR CHAT MODE -->
+            @if(flowService.activeSession()?.type === 'chat') {
+                <div class="text-center mb-8 opacity-50 animate-in fade-in slide-in-from-top-4">
+                    <h1 class="text-2xl font-bold tracking-tight text-[#E3E3E3]">{{ flowService.metadata().title || 'Untitled Chat' }}</h1>
+                    <p class="text-xs text-[#8E918F] uppercase tracking-widest mt-1">{{ flowService.selectedModel() }}</p>
+                </div>
             }
 
             @for (msg of flowService.messages(); track $index) {
                 @if (!msg.hidden) {
                 
-                <!-- Message Row -->
                 <div [class]="'flex mb-8 ' + (msg.role === 'user' ? 'justify-end' : 'justify-start') + ' animate-in fade-in slide-in-from-bottom-2 duration-500 ease-out'">
-                    
-                    <!-- Avatar (Model Only) - Minimalist -->
                     @if(msg.role === 'model' && flowService.appMode() !== 'landing') {
                         <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#D0BCFF] to-white flex-shrink-0 mr-4 mt-1 flex items-center justify-center shadow-lg opacity-90">
                         <span class="material-symbols-outlined text-[#381E72] text-[14px] font-bold">auto_awesome</span>
@@ -128,10 +88,9 @@ import { toPng } from 'html-to-image';
                     <div 
                         [class]="'max-w-[85%] md:max-w-[80%] ' + 
                         (msg.role === 'user' 
-                        ? 'bg-[#27272a] text-[#F2F2F2] rounded-2xl rounded-tr-sm px-6 py-4 shadow-md' 
+                        ? (flowService.extraGlassMode() ? 'glass-panel-ultra rounded-2xl px-6 py-4' : 'bg-[#27272a] text-[#F2F2F2] rounded-2xl rounded-tr-sm px-6 py-4 shadow-md')
                         : 'bg-transparent text-[#E3E3E3] pl-0 py-1')"
                     >
-                        <!-- ATTACHMENTS DISPLAY -->
                         @if (msg.attachments && msg.attachments.length > 0) {
                             <div class="flex flex-wrap gap-2 mb-3">
                             @for (file of msg.attachments; track file.id) {
@@ -170,64 +129,40 @@ import { toPng } from 'html-to-image';
             }
           </div>
 
-        } <!-- End System Ready Check -->
+        } 
       </div>
 
+      <!-- BOTTOM LEFT CONTROL DECK (Chat Mode Only) -->
+      @if (flowService.activeSession()?.type === 'chat') {
+          <div class="fixed bottom-6 left-6 z-[60] flex items-center gap-2 animate-in slide-in-from-left-4 fade-in duration-500">
+             <!-- HOME BUTTON (Smaller) -->
+             <button (click)="flowService.exitSession()" class="w-10 h-10 rounded-xl bg-[#2B2930] hover:bg-[#D0BCFF] hover:text-[#381E72] border border-white/10 flex items-center justify-center transition-all shadow-xl group active:scale-95">
+                <span class="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">home</span>
+             </button>
+
+             <!-- PERSONA BUTTON (Smaller) -->
+             <button (click)="flowService.openSettings()" class="w-10 h-10 rounded-xl bg-[#2B2930] hover:bg-[#D0BCFF] hover:text-[#381E72] border border-white/10 flex items-center justify-center transition-all shadow-xl group active:scale-95">
+                <span class="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">tune</span>
+             </button>
+
+             <!-- MUSIC PLAYER PILL (Smaller) -->
+             <div class="h-10 px-3 rounded-xl bg-[#2B2930] border border-white/10 flex items-center gap-2 transition-all shadow-xl hover:border-white/20">
+                 <button (click)="audioService.togglePlay()" class="w-7 h-7 rounded-full bg-white/5 hover:bg-[#D0BCFF] hover:text-[#381E72] flex items-center justify-center transition-colors">
+                    <span class="material-symbols-outlined text-sm">{{ audioService.isPlaying() ? 'pause' : 'play_arrow' }}</span>
+                 </button>
+                 <div class="flex flex-col justify-center min-w-[70px] max-w-[100px]">
+                     <span class="text-[10px] font-bold text-[#E3E3E3] truncate">{{ audioService.currentTrack()?.name || 'Silence' }}</span>
+                 </div>
+             </div>
+          </div>
+      }
+
       <!-- Floating Input Area -->
-      <div class="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-20" *ngIf="!flowService.isLiveMode()">
+      <div class="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-20">
         
-        <!-- URL CONTEXT POPOVER -->
-        @if (showUrlPanel()) {
-           <div class="absolute bottom-[calc(100%+12px)] left-0 w-full bg-[#1e1e1e] rounded-2xl shadow-2xl border border-[#444746] p-4 animate-in slide-in-from-bottom-2 zoom-in-95">
-               <div class="flex items-center justify-between mb-3 border-b border-[#333] pb-2">
-                   <div class="flex items-center gap-2">
-                       <span class="material-symbols-outlined text-[#D0BCFF]">link</span>
-                       <span class="text-sm font-bold text-[#E3E3E3]">URL Context</span>
-                       <span class="text-[10px] bg-[#2B2930] px-1.5 py-0.5 rounded text-[#8E918F]">{{urlList().length}}/20</span>
-                   </div>
-                   <button (click)="toggleUrlPanel(false)" class="text-[#8E918F] hover:text-white"><span class="material-symbols-outlined text-lg">close</span></button>
-               </div>
-               
-               <div class="space-y-2 mb-3 max-h-[150px] overflow-y-auto custom-scrollbar">
-                   @for (url of urlList(); track $index) {
-                       <div class="flex items-center gap-2 bg-[#131314] px-2 py-1.5 rounded-lg group">
-                           <span class="text-xs text-[#C4C7C5] truncate flex-1 font-mono">{{url}}</span>
-                           <button (click)="removeUrl($index)" class="text-[#5E5E5E] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                               <span class="material-symbols-outlined text-sm">remove_circle</span>
-                           </button>
-                       </div>
-                   }
-                   @if (urlList().length === 0) {
-                       <div class="text-xs text-[#5E5E5E] italic py-2 text-center">No URLs added.</div>
-                   }
-               </div>
-
-               <div class="flex items-center gap-2">
-                   <input 
-                     [(ngModel)]="urlInput" 
-                     (keydown.enter)="addUrl()"
-                     placeholder="https://..." 
-                     class="flex-1 bg-[#131314] border border-[#333] rounded-lg px-3 py-2 text-xs text-[#E3E3E3] focus:outline-none focus:border-[#D0BCFF]"
-                   >
-                   <button 
-                     (click)="addUrl()"
-                     [disabled]="urlList().length >= 20 || !urlInput"
-                     class="w-8 h-8 rounded-lg bg-[#2B2930] hover:bg-[#D0BCFF] hover:text-[#381E72] flex items-center justify-center transition-colors disabled:opacity-50"
-                   >
-                       <span class="material-symbols-outlined text-lg">add</span>
-                   </button>
-               </div>
-
-               <div class="mt-3 pt-2 border-t border-[#333] flex justify-end">
-                   <button (click)="toggleUrlPanel(false)" class="text-xs font-bold text-[#D0BCFF] hover:text-[#EADDFF] flex items-center gap-1">
-                       <span class="material-symbols-outlined text-sm">check</span> Done
-                   </button>
-               </div>
-           </div>
-        }
-
         <div 
           class="relative w-full shadow-2xl shadow-black/50 min-h-[64px] transition-all duration-300 bg-[#18181b] border border-white/10 rounded-[28px] overflow-hidden backdrop-blur-md"
+          [class.glass-panel-ultra]="flowService.extraGlassMode()"
         >
           <!-- ATTACHMENT PREVIEW AREA -->
           @if (pendingFiles().length > 0) {
@@ -251,7 +186,6 @@ import { toPng } from 'html-to-image';
 
           <!-- Input Field Wrapper -->
           <div class="flex items-end w-full px-3 py-3 gap-3">
-             <!-- PLUS BUTTON (File Picker) -->
              <button 
                 (click)="openFilePicker()"
                 class="w-9 h-9 mb-1 flex items-center justify-center text-[#8E918F] hover:text-[#E3E3E3] hover:bg-white/5 rounded-full transition-colors active:scale-95 flex-shrink-0"
@@ -261,42 +195,11 @@ import { toPng } from 'html-to-image';
              </button>
              <input #fileInput type="file" multiple class="hidden" (change)="handleFileSelect($event)">
 
-             <!-- LIVE AUDIO BUTTON (CONDITIONAL) -->
-             @if (flowService.activeModules().liveCall) {
-                 <button 
-                    (click)="toggleLiveMode()"
-                    class="w-9 h-9 mb-1 flex items-center justify-center hover:bg-white/5 rounded-full transition-colors active:scale-95 flex-shrink-0 relative group"
-                    [class.text-red-400]="flowService.isLiveConnecting()"
-                    [class.text-[#8E918F]]="!flowService.isLiveConnecting()"
-                    title="Start Live Audio"
-                 >
-                    @if (flowService.isLiveConnecting()) {
-                        <span class="material-symbols-outlined text-[20px] animate-spin">sync</span>
-                    } @else {
-                        <span class="material-symbols-outlined text-[20px] group-hover:text-[#D0BCFF]">mic</span>
-                    }
-                 </button>
-             }
-
-             <!-- URL BUTTON (Context) -->
-             <button 
-                (click)="toggleUrlPanel(!showUrlPanel())"
-                class="w-9 h-9 mb-1 flex items-center justify-center hover:bg-white/5 rounded-full transition-colors active:scale-95 flex-shrink-0 relative"
-                [class.text-[#D0BCFF]]="urlList().length > 0"
-                [class.text-[#8E918F]]="urlList().length === 0"
-                title="Add URL Context"
-             >
-                <span class="material-symbols-outlined text-[20px]">link</span>
-                @if (urlList().length > 0) {
-                    <div class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#D0BCFF] rounded-full border border-[#18181b]"></div>
-                }
-             </button>
-
              <div class="flex-1 flex flex-wrap items-center bg-transparent py-2 min-h-[44px]">
                 <textarea 
                    [(ngModel)]="userInput" 
                    (keydown.enter)="onEnter($event)"
-                   [placeholder]="!flowService.isSystemReady() ? 'System Initializing...' : (flowService.appMode() === 'landing' ? 'Start a new project...' : 'Type to flow...')"
+                   [placeholder]="!flowService.isSystemReady() ? 'System Initializing...' : (flowService.appMode() === 'landing' ? 'Start a new session...' : 'Type to flow...')"
                    [disabled]="!flowService.isSystemReady()"
                    class="flex-1 min-w-[150px] bg-transparent text-[#E3E3E3] focus:outline-none resize-none placeholder-[#5E5E5E] transition-all text-[15px] leading-relaxed self-center disabled:opacity-50 font-light"
                    rows="1"
@@ -306,7 +209,7 @@ import { toPng } from 'html-to-image';
              </div>
              <button 
                 (click)="sendMessage()"
-                [disabled]="(!userInput.trim() && pendingFiles().length === 0 && urlList().length === 0) || flowService.isLoading() || !flowService.isSystemReady()"
+                [disabled]="(!userInput.trim() && pendingFiles().length === 0) || flowService.isLoading() || !flowService.isSystemReady()"
                 class="w-10 h-10 mb-0.5 flex items-center justify-center bg-[#D0BCFF] hover:bg-[#EADDFF] text-[#381E72] rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 flex-shrink-0 shadow-lg"
              >
                 <span class="material-symbols-outlined text-[18px]">arrow_upward</span>
@@ -317,118 +220,19 @@ import { toPng } from 'html-to-image';
     </div>
   `
 })
-export class ChatComponent implements OnDestroy {
+export class ChatComponent {
   flowService = inject(FlowStateService);
+  audioService = inject(AudioService);
   
   userInput = '';
-  
-  // File Handling
   pendingFiles = signal<UserFile[]>([]);
   isDragging = signal(false);
 
-  // URL Context
-  urlList = signal<string[]>([]);
-  showUrlPanel = signal(false);
-  urlInput = '';
-
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
-  @ViewChild('visualizerCanvas') visualizerCanvas!: ElementRef<HTMLCanvasElement>;
-
-  private animationFrameId: any;
 
   constructor() {
-    effect(() => { 
-        this.flowService.messages(); 
-        if (!this.flowService.isLiveMode()) {
-            setTimeout(() => this.scrollToBottom(), 100); 
-        }
-    });
-
-    effect(() => {
-        if (this.flowService.isLiveMode()) {
-            setTimeout(() => this.startVisualizer(), 100);
-        } else {
-            this.stopVisualizer();
-        }
-    });
-  }
-
-  // --- LIVE AUDIO ---
-  toggleLiveMode() {
-      if (this.flowService.isLiveMode()) {
-          this.flowService.isLiveMode.set(false); // Just minimize
-      } else {
-          this.flowService.connectLive();
-      }
-  }
-
-  formatDuration(seconds: number): string {
-      const m = Math.floor(seconds / 60);
-      const s = seconds % 60;
-      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  }
-
-  getLastMessageText(): string {
-      const msgs = this.flowService.messages();
-      if (msgs.length === 0) return "Listening...";
-      const last = msgs[msgs.length - 1];
-      return last.text.slice(-150); // Show last 150 chars for subtitle effect
-  }
-
-  startVisualizer() {
-      if (!this.visualizerCanvas) return;
-      const canvas = this.visualizerCanvas.nativeElement;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      const analyser = this.flowService.audioAnalyser;
-      if (!analyser) return;
-
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-
-      const draw = () => {
-          if (!this.flowService.isLiveMode()) return;
-          this.animationFrameId = requestAnimationFrame(draw);
-
-          analyser.getByteFrequencyData(dataArray);
-
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-          const barWidth = (canvas.width / bufferLength) * 2.5;
-          let barHeight;
-          let x = 0;
-
-          // Mirror effect from center
-          const centerX = canvas.width / 2;
-
-          for(let i = 0; i < bufferLength; i++) {
-              barHeight = dataArray[i] / 2;
-              
-              // Dynamic color based on amplitude
-              const r = barHeight + (25 * (i/bufferLength));
-              const g = 250 * (i/bufferLength);
-              const b = 50;
-
-              ctx.fillStyle = `rgba(208, 188, 255, ${barHeight / 200})`; // #D0BCFF base with opacity
-
-              // Draw symmetrical bars
-              ctx.fillRect(centerX + x, canvas.height/2 - barHeight/2, barWidth, barHeight);
-              ctx.fillRect(centerX - x, canvas.height/2 - barHeight/2, barWidth, barHeight);
-
-              x += barWidth + 1;
-          }
-      };
-
-      draw();
-  }
-
-  stopVisualizer() {
-      if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+    effect(() => { this.flowService.messages(); setTimeout(() => this.scrollToBottom(), 100); });
   }
 
   // --- INTERACTION HANDLER ---
@@ -436,263 +240,130 @@ export class ChatComponent implements OnDestroy {
       const target = event.target as HTMLElement;
       
       const testBtn = target.closest('.test-run-btn') as HTMLElement;
-      if (testBtn) {
-          const testId = testBtn.dataset['testid'];
-          if (testId) {
-              this.flowService.activateTest(testId);
-          }
+      if (testBtn && testBtn.dataset['testid']) {
+          this.flowService.activateTest(testBtn.dataset['testid']!);
           return;
       }
 
       const agentBtn = target.closest('.agent-run-btn') as HTMLElement;
-      if (agentBtn) {
-          const configStr = agentBtn.getAttribute('data-config');
-          if (configStr) {
-              try {
-                  const jsonStr = decodeURIComponent(configStr);
-                  const config = JSON.parse(jsonStr);
-                  if(config.systemPrompt) config.systemPrompt = decodeURIComponent(config.systemPrompt);
-                  this.flowService.activateAgent(config);
-              } catch(e) {}
-          }
+      if (agentBtn && agentBtn.getAttribute('data-config')) {
+          try {
+              const config = JSON.parse(decodeURIComponent(agentBtn.getAttribute('data-config')!));
+              if(config.systemPrompt) config.systemPrompt = decodeURIComponent(config.systemPrompt);
+              this.flowService.activateAgent(config);
+          } catch(e) {}
           return;
       }
       
       const designBtn = target.closest('.design-export-btn') as HTMLElement;
-      if (designBtn) {
-          const designId = designBtn.dataset['designId'];
-          if (designId) {
-              this.downloadDesign(designId, designBtn);
-          }
+      if (designBtn && designBtn.dataset['designId']) {
+          this.downloadDesign(designBtn.dataset['designId']!, designBtn);
           return;
       }
 
       const bgBtn = target.closest('.background-selector-btn') as HTMLElement;
-      if (bgBtn) {
-          const url = bgBtn.dataset['url'];
-          if (url) {
-              this.flowService.setWallpaper(url);
-              this.flowService.addSystemMessage(`Wallpaper updated successfully.`);
-          }
-          return;
-      }
-
-      const urlReqBtn = target.closest('.url-request-btn') as HTMLElement;
-      if (urlReqBtn) {
-          this.showUrlPanel.set(true);
+      if (bgBtn && bgBtn.dataset['url']) {
+          this.flowService.setWallpaper(bgBtn.dataset['url']!);
+          this.flowService.addSystemMessage(`Wallpaper updated.`);
           return;
       }
 
       const codeToggle = target.closest('.code-widget-toggle') as HTMLElement;
       if (codeToggle) {
-          const container = codeToggle.closest('.code-widget-container');
-          if (container) {
-              const content = container.querySelector('.code-widget-content');
-              const chevron = container.querySelector('.chevron');
-              if (content) {
-                  content.classList.toggle('hidden');
-                  if (chevron) {
-                      if (content.classList.contains('hidden')) {
-                          chevron.classList.remove('rotate-180');
-                      } else {
-                          chevron.classList.add('rotate-180');
-                      }
-                  }
-              }
-          }
+          const content = codeToggle.closest('.code-widget-container')?.querySelector('.code-widget-content');
+          if (content) content.classList.toggle('hidden');
       }
-  }
 
-  // --- URL HANDLING ---
-  addUrl() {
-      if (this.urlInput && this.urlList().length < 20) {
-          let url = this.urlInput.trim();
-          if (!url.match(/^https?:\/\//)) {
-              url = 'https://' + url;
-          }
-          this.urlList.update(list => [...list, url]);
-          this.urlInput = '';
+      // IDE CHIPS
+      const ideChip = target.closest('.ide-chip') as HTMLElement;
+      if (ideChip) {
+          this.flowService.updateModule('ide', true);
+          this.flowService.ensureProjectMode();
       }
-  }
-
-  removeUrl(index: number) {
-      this.urlList.update(list => list.filter((_, i) => i !== index));
-  }
-
-  toggleUrlPanel(show: boolean) {
-      this.showUrlPanel.set(show);
   }
 
   async downloadDesign(designId: string, button: HTMLElement) {
-      const containerId = `design-container-${designId}`;
-      const container = document.getElementById(containerId);
-      
-      if (!container) {
-          console.error("Design container not found:", containerId);
-          return;
-      }
-
+      const container = document.getElementById(`design-container-${designId}`);
+      if (!container) return;
       const previewElement = container.querySelector('.design-preview') as HTMLElement;
-      
-      if (!previewElement) {
-          console.error("Preview element not found inside container");
-          return;
-      }
+      if (!previewElement) return;
 
       const originalText = button.innerHTML;
       button.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">refresh</span> Processing...';
-      button.style.pointerEvents = 'none';
-
+      
       try {
-          const dataUrl = await toPng(previewElement, { 
-              cacheBust: true,
-              skipFonts: true, 
-              backgroundColor: null 
-          });
-
+          const dataUrl = await toPng(previewElement, { cacheBust: true, skipFonts: true, backgroundColor: null });
           const link = document.createElement('a');
-          const dateStr = new Date().toISOString().split('T')[0];
-          const filename = `Design_${dateStr}_${designId.substring(0,6)}.png`;
-          link.download = filename;
+          link.download = `Design_${new Date().toISOString().split('T')[0]}_${designId.substring(0,6)}.png`;
           link.href = dataUrl;
           link.click();
 
           const base64 = dataUrl.split(',')[1];
-          
-          const userFile: UserFile = {
+          this.flowService.addFile({
               id: Math.random().toString(36),
-              name: filename,
+              name: link.download,
               type: 'image/png',
               url: dataUrl,
-              base64: base64,
-              description: `AI generated design at ${dateStr}`
-          };
-          
-          this.flowService.addFile(userFile);
+              base64: base64
+          });
           this.flowService.updateModule('files', true);
 
           button.innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span> Saved';
-          setTimeout(() => {
-             button.innerHTML = originalText;
-             button.style.pointerEvents = 'auto';
-          }, 2000);
-
+          setTimeout(() => { button.innerHTML = originalText; }, 2000);
       } catch (error) {
-          console.error("Design export failed:", error);
           button.innerHTML = '<span class="material-symbols-outlined text-[16px]">error</span> Failed';
-          setTimeout(() => {
-             button.innerHTML = originalText;
-             button.style.pointerEvents = 'auto';
-          }, 2000);
+          setTimeout(() => { button.innerHTML = originalText; }, 2000);
       }
   }
 
   onEnter(e: KeyboardEvent) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      this.sendMessage();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.sendMessage(); }
   }
 
   async sendMessage() {
-    if ((!this.userInput.trim() && this.pendingFiles().length === 0 && this.urlList().length === 0) || this.flowService.isLoading()) return;
-    
-    // Check key before sending
-    if (!this.flowService.apiKey()) {
-        this.flowService.openSettings();
-        return;
-    }
-
+    if ((!this.userInput.trim() && this.pendingFiles().length === 0) || this.flowService.isLoading()) return;
     const text = this.userInput;
     const files = [...this.pendingFiles()];
-    let hiddenContext = '';
-    
-    if (this.urlList().length > 0) {
-        const urlString = this.urlList().map(u => `- ${u}`).join('\n');
-        hiddenContext = `[LOG: These URL's given:]\n${urlString}`;
-        this.urlList.set([]); 
-        this.showUrlPanel.set(false);
-    }
-    
     this.userInput = '';
-    this.pendingFiles.set([]); 
-    
-    this.flowService.sendMessage(text, files, hiddenContext);
+    this.pendingFiles.set([]);
+    this.flowService.sendMessage(text, files);
   }
 
-  scrollToBottom() {
-    try { this.scrollContainer.nativeElement.scrollTop = this.scrollContainer.nativeElement.scrollHeight; } catch(err) { }
-  }
-
-  openFilePicker() {
-    this.fileInput.nativeElement.click();
-  }
-
-  // --- FILE HANDLING ---
+  scrollToBottom() { try { this.scrollContainer.nativeElement.scrollTop = this.scrollContainer.nativeElement.scrollHeight; } catch(err) { } }
+  openFilePicker() { this.fileInput.nativeElement.click(); }
 
   handleFileSelect(event: Event) {
       const input = event.target as HTMLInputElement;
-      if (input.files && input.files.length > 0) {
-          this.processFiles(Array.from(input.files));
-      }
+      if (input.files && input.files.length > 0) this.processFiles(Array.from(input.files));
       input.value = ''; 
   }
 
-  onDragOver(e: DragEvent) {
-      e.preventDefault();
-      e.stopPropagation();
-      this.isDragging.set(true);
-  }
-
-  onDragLeave(e: DragEvent) {
-      e.preventDefault();
-      e.stopPropagation();
-      if ((e.relatedTarget as HTMLElement) === null) {
-        this.isDragging.set(false);
-      }
-  }
-
-  onDrop(e: DragEvent) {
-      e.preventDefault();
-      e.stopPropagation();
-      this.isDragging.set(false);
-      
-      if (e.dataTransfer && e.dataTransfer.files.length > 0) {
-          this.processFiles(Array.from(e.dataTransfer.files));
-      }
-  }
+  onDragOver(e: DragEvent) { e.preventDefault(); e.stopPropagation(); this.isDragging.set(true); }
+  onDragLeave(e: DragEvent) { e.preventDefault(); e.stopPropagation(); if ((e.relatedTarget as HTMLElement) === null) this.isDragging.set(false); }
+  onDrop(e: DragEvent) { e.preventDefault(); e.stopPropagation(); this.isDragging.set(false); if (e.dataTransfer && e.dataTransfer.files.length > 0) this.processFiles(Array.from(e.dataTransfer.files)); }
 
   async processFiles(files: File[]) {
       for (const file of files) {
           try {
               const base64 = await this.fileToBase64(file);
-              const userFile: UserFile = {
+              this.pendingFiles.update(current => [...current, {
                   id: Math.random().toString(36),
                   name: file.name,
                   type: file.type || 'application/octet-stream',
-                  url: URL.createObjectURL(file), 
+                  url: URL.createObjectURL(file),
                   base64: base64
-              };
-              this.pendingFiles.update(current => [...current, userFile]);
-          } catch (e) {
-              console.error("File processing failed", e);
-          }
+              }]);
+          } catch (e) {}
       }
   }
 
-  removeFile(file: UserFile) {
-      this.pendingFiles.update(current => current.filter(f => f !== file));
-  }
+  removeFile(file: UserFile) { this.pendingFiles.update(current => current.filter(f => f !== file)); }
 
   fileToBase64(file: File): Promise<string> {
       return new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.readAsDataURL(file);
-          reader.onload = () => {
-              const result = reader.result as string;
-              const base64 = result.split(',')[1];
-              resolve(base64);
-          };
+          reader.onload = () => resolve((reader.result as string).split(',')[1]);
           reader.onerror = error => reject(error);
       });
   }
@@ -704,9 +375,5 @@ export class ChatComponent implements OnDestroy {
       if (type.startsWith('audio/')) return 'headphones';
       if (type === 'application/pdf') return 'picture_as_pdf';
       return 'draft';
-  }
-
-  ngOnDestroy() {
-      this.stopVisualizer();
   }
 }

@@ -1,10 +1,10 @@
 services:
   - type: static
-    name: flowstate
+    name: flowstate-app
     env: static
     buildCommand: npm install && npm run build
-    publishPath: dist
-    routes:
-      - source: /.*
-        destination: /index.html
-        type: rewrite
+    staticPublishPath: dist
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -67,6 +68,51 @@
       
       /* KaTeX Adjustments */
       .katex { font-size: 1.1em; color: #EADDFF; }
+
+      /* --- ULTRA GLASS UI ENGINE --- */
+      
+      /* 1. Noise Texture */
+      .glass-noise {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none;
+        z-index: 5;
+        opacity: 0.07;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      }
+
+      /* 2. Floating Blobs */
+      .glass-blob {
+        position: absolute;
+        filter: blur(80px);
+        opacity: 0.6;
+        animation: floatBlob 20s infinite ease-in-out alternate;
+        border-radius: 50%;
+      }
+      .blob-1 { background: #4F378B; width: 500px; height: 500px; top: -10%; left: -10%; animation-duration: 25s; }
+      .blob-2 { background: #381E72; width: 600px; height: 600px; bottom: -10%; right: -10%; animation-duration: 30s; animation-direction: alternate-reverse; }
+      .blob-3 { background: #D0BCFF; width: 300px; height: 300px; top: 40%; left: 40%; opacity: 0.3; animation-duration: 18s; }
+
+      @keyframes floatBlob {
+        0% { transform: translate(0, 0) scale(1); }
+        33% { transform: translate(30px, -50px) scale(1.1); }
+        66% { transform: translate(-20px, 20px) scale(0.9); }
+        100% { transform: translate(0, 0) scale(1); }
+      }
+
+      /* 3. Global Specular Highlight Utility */
+      .glass-panel-ultra {
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(24px) saturate(120%) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(120%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+        color: #FFFFFF !important;
+      }
+      
+      .glass-text-ultra {
+         text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      }
     </style>
   <script type="importmap">
 {
@@ -77,7 +123,7 @@
     "rxjs/webSocket": "https://esm.sh/rxjs@^7.8.2/webSocket?conditions=es2015",
     "rxjs/testing": "https://esm.sh/rxjs@^7.8.2/testing?conditions=es2015",
     "rxjs/fetch": "https://esm.sh/rxjs@^7.8.2/fetch?conditions=es2015",
-    "@google/genai": "https://esm.sh/@google/genai@^1.37.0?external=rxjs",
+    "@google/genai": "https://esm.sh/@google/genai?external=rxjs",
     "@angular/forms": "https://esm.sh/@angular/forms@^21.1.0?external=rxjs",
     "@angular/common": "https://esm.sh/@angular/common@^21.1.0?external=rxjs",
     "@angular/platform-browser": "https://esm.sh/@angular/platform-browser@^21.1.0?external=rxjs",
@@ -86,7 +132,7 @@
     "marked": "https://esm.sh/marked@12.0.0",
     "@angular/common/http": "https://esm.sh/@angular/common@^21.1.1/http?external=rxjs",
     "html-to-image": "https://esm.sh/html-to-image@1.11.11",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.93.1?external=rxjs"
+    "@webcontainer/api": "https://esm.sh/@webcontainer/api@1.1.8"
   }
 }
 </script>

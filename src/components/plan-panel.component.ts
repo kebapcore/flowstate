@@ -13,15 +13,22 @@ import { MediaPlayerComponent } from './media-player.component';
   template: `
     <div 
       class="h-full flex flex-col w-full relative p-6 pt-20 md:pt-6 transition-all duration-700 ease-in-out"
-      [class.font-sans]="flowService.theme() === 'cold'"
-      [class.bg-[#121212]]="!flowService.wallpaper() && flowService.theme() === 'material'"
-      [class.bg-black]="!flowService.wallpaper() && flowService.theme() === 'cold'"
-      [class.bg-opacity-90]="!!flowService.wallpaper()"
-      [class.backdrop-blur-2xl]="!!flowService.wallpaper()"
-      [class.border-l]="flowService.theme() === 'cold'"
-      [class.border-white-5]="flowService.theme() === 'cold'"
-      [class.md:rounded-[32px]]="flowService.theme() === 'material'"
-      [class.md:rounded-2xl]="flowService.theme() === 'cold'"
+      [class.font-sans]="flowService.theme() === 'cold' || flowService.extraGlassMode()"
+      
+      [class.bg-[#121212]]="!flowService.wallpaper() && flowService.theme() === 'material' && !flowService.extraGlassMode()"
+      [class.bg-black]="!flowService.wallpaper() && flowService.theme() === 'cold' && !flowService.extraGlassMode()"
+      
+      [class.bg-opacity-90]="!!flowService.wallpaper() && !flowService.extraGlassMode()"
+      [class.backdrop-blur-2xl]="!!flowService.wallpaper() && !flowService.extraGlassMode()"
+      
+      [class.border-l]="flowService.theme() === 'cold' && !flowService.extraGlassMode()"
+      [class.border-white-5]="flowService.theme() === 'cold' && !flowService.extraGlassMode()"
+      
+      [class.md:rounded-[32px]]="flowService.theme() === 'material' && !flowService.extraGlassMode()"
+      [class.md:rounded-2xl]="flowService.theme() === 'cold' && !flowService.extraGlassMode()"
+
+      [class.glass-panel-ultra]="flowService.extraGlassMode()"
+      [class.md:rounded-[24px]]="flowService.extraGlassMode()"
     >
       
       <!-- ==================== AGENT MODE ==================== -->
@@ -45,14 +52,16 @@ import { MediaPlayerComponent } from './media-player.component';
               <div class="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar mb-4" #agentScroll>
                   @for (msg of flowService.activeAgent()?.messages; track $index) {
                       <div [class]="'flex ' + (msg.role === 'user' ? 'justify-end' : 'justify-start')">
-                          <div [class]="'max-w-[90%] px-5 py-3 text-sm leading-relaxed rounded-2xl ' + (msg.role === 'user' ? 'bg-[#27272a] text-[#E3E3E3]' : 'bg-[#18181b] text-[#C4C7C5] border border-white/5')">
+                          <div [class]="'max-w-[90%] px-5 py-3 text-sm leading-relaxed rounded-2xl ' + (msg.role === 'user' ? 'bg-[#27272a] text-[#E3E3E3]' : (flowService.extraGlassMode() ? 'glass-panel-ultra border-none' : 'bg-[#18181b] text-[#C4C7C5] border border-white/5'))">
                                <div class="prose prose-invert prose-p:text-inherit" [innerHTML]="msg.displayHtml"></div>
                           </div>
                       </div>
                   }
               </div>
               <div class="relative">
-                  <textarea [(ngModel)]="agentInput" (keydown.enter)="sendAgentMessage($event)" placeholder="Message..." class="w-full bg-[#18181b] border border-[#2B2930] rounded-2xl pl-5 pr-12 py-4 text-sm text-[#E3E3E3] focus:outline-none focus:border-[#444746] resize-none shadow-inner" rows="1"></textarea>
+                  <textarea [(ngModel)]="agentInput" (keydown.enter)="sendAgentMessage($event)" placeholder="Message..." class="w-full bg-[#18181b] border border-[#2B2930] rounded-2xl pl-5 pr-12 py-4 text-sm text-[#E3E3E3] focus:outline-none focus:border-[#444746] resize-none shadow-inner" rows="1"
+                   [class.glass-panel-ultra]="flowService.extraGlassMode()"
+                  ></textarea>
                   <button (click)="sendAgentMessage()" [disabled]="!agentInput.trim() || flowService.activeAgent()?.isLoading" class="absolute right-3 top-3 w-8 h-8 rounded-xl text-[#D0BCFF] flex items-center justify-center hover:bg-white/5 transition-all disabled:opacity-30"><span class="material-symbols-outlined text-lg">arrow_upward</span></button>
               </div>
           </div>
@@ -79,7 +88,7 @@ import { MediaPlayerComponent } from './media-player.component';
               <!-- Questions List -->
               <div class="flex-1 overflow-y-auto space-y-8 pr-2 custom-scrollbar pb-10">
                   @for (q of flowService.activeTest()?.questions; track q.id; let idx = $index) {
-                      <div class="p-5 bg-[#18181b] rounded-2xl border border-white/5 shadow-sm">
+                      <div class="p-5 bg-[#18181b] rounded-2xl border border-white/5 shadow-sm" [class.glass-panel-ultra]="flowService.extraGlassMode()">
                           <div class="flex gap-4 mb-4">
                               <span class="text-[#D0BCFF] font-bold font-mono text-lg opacity-40">0{{idx+1}}</span>
                               <div class="text-[#E3E3E3] font-medium leading-relaxed text-base">{{ q.question }}</div>
@@ -98,9 +107,11 @@ import { MediaPlayerComponent } from './media-player.component';
                                    (click)="answerQuestion(q.id, opt.key)"
                                    [disabled]="isQuestionAnswered(q.id)"
                                    class="w-full text-left px-4 py-3.5 rounded-xl transition-all border flex items-center gap-4 group relative overflow-hidden"
-                                   [class.bg-[#1E1F20]]="!isQuestionAnswered(q.id)"
+                                   [class.bg-[#1E1F20]]="!isQuestionAnswered(q.id) && !flowService.extraGlassMode()"
                                    [class.hover:bg-[#27272a]]="!isQuestionAnswered(q.id)"
                                    [class.border-transparent]="!isQuestionAnswered(q.id)"
+                                   [class.glass-panel-ultra]="flowService.extraGlassMode()"
+                                   
                                    [class.bg-green-900/20]="isQuestionAnswered(q.id) && opt.key === q.correctKey"
                                    [class.border-green-500/30]="isQuestionAnswered(q.id) && opt.key === q.correctKey"
                                    [class.text-green-100]="isQuestionAnswered(q.id) && opt.key === q.correctKey"
@@ -144,14 +155,17 @@ import { MediaPlayerComponent } from './media-player.component';
               {{ flowService.appMode() === 'study' ? 'Curriculum' : 'Workspace' }}
           </h2>
           <!-- Tab Switcher (Compact) -->
-          <div class="flex bg-[#18181b] p-1 rounded-xl border border-white/5">
+          <div class="flex bg-[#18181b] p-1 rounded-xl border border-white/5"
+               [class.glass-panel-ultra]="flowService.extraGlassMode()"
+               [class.bg-transparent]="flowService.extraGlassMode()"
+          >
                 @if (flowService.activeModules().routine) {
-                    <button (click)="activeTab.set('routine')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-colors" [class.bg-[#27272a]]="activeTab() === 'routine'" [class.text-white]="activeTab() === 'routine'" [class.text-[#8E918F]]="activeTab() !== 'routine'">Routine</button>
+                    <button (click)="activeTab.set('routine')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-colors" [class.bg-[#27272a]]="activeTab() === 'routine' && !flowService.extraGlassMode()" [class.bg-white-10]="activeTab() === 'routine' && flowService.extraGlassMode()" [class.text-white]="activeTab() === 'routine'" [class.text-[#8E918F]]="activeTab() !== 'routine'">Routine</button>
                 }
-                <button (click)="activeTab.set('plan')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-colors" [class.bg-[#27272a]]="activeTab() === 'plan'" [class.text-white]="activeTab() === 'plan'" [class.text-[#8E918F]]="activeTab() !== 'plan'">Plan</button>
-                <button (click)="activeTab.set('notes')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-colors" [class.bg-[#27272a]]="activeTab() === 'notes'" [class.text-white]="activeTab() === 'notes'" [class.text-[#8E918F]]="activeTab() !== 'notes'">Notes</button>
+                <button (click)="activeTab.set('plan')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-colors" [class.bg-[#27272a]]="activeTab() === 'plan' && !flowService.extraGlassMode()" [class.bg-white-10]="activeTab() === 'plan' && flowService.extraGlassMode()" [class.text-white]="activeTab() === 'plan'" [class.text-[#8E918F]]="activeTab() !== 'plan'">Plan</button>
+                <button (click)="activeTab.set('notes')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-colors" [class.bg-[#27272a]]="activeTab() === 'notes' && !flowService.extraGlassMode()" [class.bg-white-10]="activeTab() === 'notes' && flowService.extraGlassMode()" [class.text-white]="activeTab() === 'notes'" [class.text-[#8E918F]]="activeTab() !== 'notes'">Notes</button>
                 @if (flowService.activeModules().files) {
-                    <button (click)="activeTab.set('files')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-colors" [class.bg-[#27272a]]="activeTab() === 'files'" [class.text-white]="activeTab() === 'files'" [class.text-[#8E918F]]="activeTab() !== 'files'">Files</button>
+                    <button (click)="activeTab.set('files')" class="px-4 py-1.5 text-xs font-bold rounded-lg transition-colors" [class.bg-[#27272a]]="activeTab() === 'files' && !flowService.extraGlassMode()" [class.bg-white-10]="activeTab() === 'files' && flowService.extraGlassMode()" [class.text-white]="activeTab() === 'files'" [class.text-[#8E918F]]="activeTab() !== 'files'">Files</button>
                 }
           </div>
       </div>
@@ -207,12 +221,15 @@ import { MediaPlayerComponent } from './media-player.component';
 
                  <!-- Card -->
                  <div class="flex-1 p-5 rounded-2xl transition-all duration-500 border relative overflow-hidden group/card shadow-sm" 
-                    [class.bg-[#18181b]]="block.status !== 'active'" 
-                    [class.border-[#27272a]]="block.status !== 'active'" 
+                    [class.bg-[#18181b]]="block.status !== 'active' && !flowService.extraGlassMode()" 
+                    [class.border-[#27272a]]="block.status !== 'active' && !flowService.extraGlassMode()"
+                    
+                    [class.glass-panel-ultra]="flowService.extraGlassMode()"
+                    
                     [class.opacity-60]="block.status === 'completed'" 
                     [class.opacity-40]="block.status === 'skipped'" 
                     
-                    [class.bg-[#1d1b24]]="block.status === 'active'" 
+                    [class.bg-[#1d1b24]]="block.status === 'active' && !flowService.extraGlassMode()" 
                     [class.border-[#D0BCFF]/30]="block.status === 'active'"
                     [class.shadow-md]="block.status === 'active'"
                  >
@@ -276,7 +293,9 @@ import { MediaPlayerComponent } from './media-player.component';
                       @else if (step.status === 'active') { <div class="w-2 h-2 bg-[#D0BCFF] rounded-full animate-pulse"></div> }
                    </div>
                    
-                   <div class="flex-1 p-5 rounded-2xl transition-all duration-300 border border-transparent group/card hover:bg-[#18181b] hover:border-[#27272a]">
+                   <div class="flex-1 p-5 rounded-2xl transition-all duration-300 border border-transparent group/card hover:bg-[#18181b] hover:border-[#27272a]"
+                        [class.glass-panel-ultra]="flowService.extraGlassMode()"
+                   >
                       <div class="flex justify-between items-start">
                         <h4 class="text-sm font-medium mb-1 transition-colors" [class.text-[#F2F2F2]]="step.status === 'active'" [class.text-[#8E918F]]="step.status === 'pending'" [class.line-through]="step.status === 'finished'" [class.opacity-50]="step.status === 'finished'">{{ step.title }}</h4>
                         
@@ -294,7 +313,7 @@ import { MediaPlayerComponent } from './media-player.component';
               </div>
             }
 
-            <button (click)="startNewPlanStep()" class="w-full py-4 mt-6 border border-dashed border-[#27272a] rounded-2xl text-xs text-[#5E5E5E] hover:text-[#C4C7C5] hover:border-[#444746] hover:bg-[#18181b] transition-all flex items-center justify-center gap-2">
+            <button (click)="startNewPlanStep()" class="w-full py-4 mt-6 border border-dashed border-[#27272a] rounded-2xl text-xs text-[#5E5E5E] hover:text-[#C4C7C5] hover:border-[#444746] hover:bg-[#18181b] transition-all flex items-center justify-center gap-2" [class.glass-panel-ultra]="flowService.extraGlassMode()">
               <span class="material-symbols-outlined text-base">add</span><span>Add Step</span>
             </button>
           </div>
@@ -311,8 +330,8 @@ import { MediaPlayerComponent } from './media-player.component';
               <div class="text-center mt-20 opacity-20 text-[#C4C7C5]"><span class="material-symbols-outlined text-5xl mb-3">description</span><p class="text-sm">No notes</p></div>
             }
             @for (note of flowService.notes(); track note.id) {
-              <div class="bg-[#18181b] rounded-2xl p-5 hover:border-[#444746] transition-all group relative border border-white/5 cursor-pointer shadow-sm" (click)="editNote(note)">
-                <div class="absolute top-4 right-4 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-[#18181b] pl-2 z-10">
+              <div class="bg-[#18181b] rounded-2xl p-5 hover:border-[#444746] transition-all group relative border border-white/5 cursor-pointer shadow-sm" (click)="editNote(note)" [class.glass-panel-ultra]="flowService.extraGlassMode()">
+                <div class="absolute top-4 right-4 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-[#18181b] pl-2 z-10" [class.glass-panel-ultra]="flowService.extraGlassMode()">
                   <button (click)="$event.stopPropagation(); deleteNote(note.id)" class="text-[#5E5E5E] hover:text-red-400 p-1.5 rounded hover:bg-white/5 transition-colors"><span class="material-symbols-outlined text-sm">delete</span></button>
                 </div>
                 <h3 class="text-[#E3E3E3] text-sm font-bold mb-2 truncate pr-8">{{ note.title }}</h3>
@@ -322,67 +341,31 @@ import { MediaPlayerComponent } from './media-player.component';
           </div>
         }
         
-        <!-- FILES VIEW (REFACTORED) -->
+        <!-- FILES VIEW -->
         @if (activeTab() === 'files' && flowService.activeModules().files) {
-             <!-- Drop Zone -->
-             <div class="min-h-[80px] border border-dashed border-[#27272a] rounded-2xl p-4 flex flex-col items-center justify-center text-[#5E5E5E] transition-all hover:border-[#D0BCFF] hover:bg-[#18181b] mb-6 group cursor-pointer" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
-                @if (flowService.files().length === 0) { 
-                    <span class="material-symbols-outlined text-2xl mb-1 group-hover:text-[#D0BCFF] transition-colors">cloud_upload</span>
-                    <p class="text-[10px] text-center">Drag files here</p> 
-                } @else { 
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-xl text-[#D0BCFF]">add_circle</span>
-                        <p class="text-[10px]">Add file</p>
-                    </div> 
-                }
+             <div class="min-h-[100px] border border-dashed border-[#27272a] rounded-2xl p-6 flex flex-col items-center justify-center text-[#5E5E5E] transition-all hover:border-[#D0BCFF] hover:bg-[#18181b] mb-6 group cursor-pointer" (dragover)="onDragOver($event)" (drop)="onDrop($event)" [class.glass-panel-ultra]="flowService.extraGlassMode()">
+                @if (flowService.files().length === 0) { <span class="material-symbols-outlined text-3xl mb-2 group-hover:text-[#D0BCFF] transition-colors">cloud_upload</span><p class="text-xs text-center">Drag files here</p> } @else { <div class="flex flex-col items-center"><span class="material-symbols-outlined text-2xl mb-2 text-[#D0BCFF]">add_circle</span><p class="text-xs">Add another file</p></div> }
             </div>
-
-             <!-- 1. IMAGE GALLERY (Google Images Style) -->
-             @if (imageFiles().length > 0) {
-                 <div class="mb-2 px-1 text-[10px] font-bold text-[#5E5E5E] uppercase tracking-wider">Images</div>
-                 <div class="grid grid-cols-2 md:grid-cols-3 gap-1 mb-6">
-                     @for (img of imageFiles(); track img.id) {
-                         <div class="relative aspect-square bg-[#18181b] overflow-hidden group cursor-pointer rounded-lg border border-white/5 hover:border-[#D0BCFF] transition-all" (click)="openPreview(img)">
-                             <!-- Image Render -->
-                             <img [src]="img.url" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy">
-                             
-                             <!-- Hover Overlay -->
-                             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end justify-between p-2 opacity-0 group-hover:opacity-100">
-                                 <span class="text-[9px] text-white truncate max-w-[70%] drop-shadow-md">{{img.name}}</span>
-                                 <button (click)="$event.stopPropagation(); deleteFile(img.id)" class="w-5 h-5 rounded bg-black/50 text-white flex items-center justify-center hover:bg-red-500 transition-colors">
-                                     <span class="material-symbols-outlined text-[12px]">close</span>
-                                 </button>
-                             </div>
+             <div class="space-y-3">
+                 @for (file of flowService.files(); track file.id) {
+                     <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-[#18181b] border border-transparent hover:border-white/5 group transition-colors" [class.glass-panel-ultra]="flowService.extraGlassMode()">
+                         <div class="w-10 h-10 rounded-lg bg-[#27272a] flex items-center justify-center">
+                             <span class="material-symbols-outlined text-[#8E918F] text-xl">{{ getIcon(file) }}</span>
                          </div>
-                     }
-                 </div>
-             }
-
-             <!-- 2. OTHER FILES LIST -->
-             @if (otherFiles().length > 0) {
-                 <div class="mb-2 px-1 text-[10px] font-bold text-[#5E5E5E] uppercase tracking-wider">Documents</div>
-                 <div class="space-y-2">
-                     @for (file of otherFiles(); track file.id) {
-                         <div (click)="openPreview(file)" class="flex items-center gap-3 p-3 rounded-xl bg-[#18181b] border border-transparent hover:border-[#444746] cursor-pointer group transition-all">
-                             <div class="w-9 h-9 rounded-lg bg-[#27272a] flex items-center justify-center text-[#D0BCFF]">
-                                 <span class="material-symbols-outlined text-lg">{{ getIcon(file) }}</span>
-                             </div>
-                             <div class="flex-1 min-w-0">
-                                 <div class="text-xs text-[#E3E3E3] truncate font-medium">{{ file.name }}</div>
-                                 <div class="text-[10px] text-[#5E5E5E]">{{ getFileTypeLabel(file) }}</div>
-                             </div>
-                             <button (click)="$event.stopPropagation(); deleteFile(file.id)" class="opacity-0 group-hover:opacity-100 text-[#5E5E5E] hover:text-red-400 p-2 transition-opacity"><span class="material-symbols-outlined text-lg">close</span></button>
-                         </div>
-                     }
-                 </div>
-             }
+                         <span class="text-sm text-[#C4C7C5] truncate flex-1 font-medium">{{ file.name }}</span>
+                         <button (click)="deleteFile(file.id)" class="opacity-0 group-hover:opacity-100 text-[#5E5E5E] hover:text-red-400 p-2"><span class="material-symbols-outlined text-lg">close</span></button>
+                     </div>
+                 }
+             </div>
         }
       </div>
       } 
 
-      <!-- (Editor Logic for Notes/Plan) -->
+      <!-- (Editor and Preview Logic kept identical but visually refined) -->
       @if (showEditor()) {
-        <div class="absolute inset-0 z-50 bg-[#121212] flex flex-col p-8 animate-in fade-in zoom-in-95 duration-200">
+        <div class="absolute inset-0 z-50 bg-[#121212] flex flex-col p-8 animate-in fade-in zoom-in-95 duration-200"
+             [class.glass-panel-ultra]="flowService.extraGlassMode()"
+        >
            <div class="flex items-center justify-between mb-8">
              <h3 class="text-[#F2F2F2] text-sm font-bold uppercase tracking-wide">{{ editorMode() === 'note' ? (editId() ? 'Edit Note' : 'New Note') : (editId() ? 'Edit Step' : 'New Step') }}</h3>
              <button (click)="showEditor.set(false)" class="w-9 h-9 rounded-full hover:bg-[#2B2930] flex items-center justify-center text-[#8E918F] hover:text-white transition-colors"><span class="material-symbols-outlined text-xl">close</span></button>
@@ -395,43 +378,6 @@ import { MediaPlayerComponent } from './media-player.component';
               <button (click)="save()" [disabled]="!editTitle() || (editorMode() === 'note' && !editContent())" class="bg-[#D0BCFF] hover:bg-[#EADDFF] disabled:opacity-50 disabled:cursor-not-allowed text-[#381E72] px-8 py-3 rounded-full text-sm font-bold transition-all shadow-lg active:scale-95">Save</button>
            </div>
         </div>
-      }
-
-      <!-- FILE PREVIEW OVERLAY -->
-      @if (previewFile()) {
-          <div class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex flex-col animate-in fade-in duration-200" (click)="closePreview()">
-              
-              <!-- Toolbar -->
-              <div class="flex items-center justify-between p-4 md:p-6" (click)="$event.stopPropagation()">
-                  <div class="text-white text-sm font-medium truncate max-w-[200px]">{{ previewFile()?.name }}</div>
-                  <div class="flex gap-2">
-                      <a [href]="previewFile()?.url" [download]="previewFile()?.name" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
-                          <span class="material-symbols-outlined text-lg">download</span>
-                      </a>
-                      <button (click)="closePreview()" class="w-9 h-9 rounded-full bg-white/10 hover:bg-red-500/50 flex items-center justify-center text-white transition-colors">
-                          <span class="material-symbols-outlined text-lg">close</span>
-                      </button>
-                  </div>
-              </div>
-
-              <!-- Content -->
-              <div class="flex-1 flex items-center justify-center p-4 overflow-hidden" (click)="$event.stopPropagation()">
-                  @if (isImage(previewFile()!)) {
-                      <img [src]="previewFile()?.url" class="max-w-full max-h-full object-contain shadow-2xl rounded-lg">
-                  } @else if (previewLoading()) {
-                      <div class="animate-spin text-[#D0BCFF]"><span class="material-symbols-outlined text-3xl">progress_activity</span></div>
-                  } @else if (previewTextContent()) {
-                      <div class="bg-[#1e1e1e] p-6 rounded-xl border border-white/10 max-w-3xl w-full max-h-full overflow-y-auto custom-scrollbar">
-                          <div class="prose prose-invert prose-sm max-w-none font-mono" [innerHTML]="previewTextContent()"></div>
-                      </div>
-                  } @else {
-                      <div class="text-[#8E918F] flex flex-col items-center gap-2">
-                          <span class="material-symbols-outlined text-4xl">visibility_off</span>
-                          <span>Preview not available</span>
-                      </div>
-                  }
-              </div>
-          </div>
       }
     </div>
   `
